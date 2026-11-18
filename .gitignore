@@ -1,0 +1,13 @@
+# Build output and caches
+node_modules/
+
+# Machine-specific
+.DS_Store
+.idea/
+
+# Credentials must never be committed: merchant keys, keystores, env files
+*.pem
+*.key
+*.p12
+.env
+.env.*

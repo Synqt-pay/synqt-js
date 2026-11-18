@@ -1,0 +1,38 @@
+{
+  "name": "@synqt/js",
+  "version": "0.1.0",
+  "description": "Take SYNQT payins in a web page: a Synqt-branded payment sheet, the direct API, and the hosted Payment Web App.",
+  "license": "Apache-2.0",
+  "main": "synqt.js",
+  "files": [
+    "synqt.js",
+    "fonts",
+    "LICENSE",
+    "NOTICE",
+    "CHANGELOG.md",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test test/",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.14.0",
+    "globals": "^17.14.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/synqt-pay/synqt-js.git"
+  },
+  "homepage": "https://github.com/synqt-pay/synqt-js#readme",
+  "bugs": {
+    "url": "https://github.com/synqt-pay/synqt-js/issues"
+  }
+}
