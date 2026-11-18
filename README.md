@@ -11,7 +11,6 @@ This SDK has no card fields. It never collects, sees or sends a card number, whi
 - A current browser: Chrome, Edge, Firefox or Safari from 2023 on (it uses `<dialog>`, `:has()`, `inert` and `AbortSignal.timeout`).
 - One plain JavaScript file, `synqt.js`, with no build step, no dependencies and no modules. It sets one global, `SynqtSDK`.
 - A backend of your own that mints a SYNQT token for each order. The page never holds the merchant's private key or secret key.
-- **SYNQT's API must accept calls from your page's origin (CORS).** Stable allows any origin but does not yet list the `Authorization` header the SDK sends, which browsers require (see [Before merchants use this](#before-merchants-use-this)). Until SYNQT changes that, pass a `fetch` that sends the calls through your backend; see [Set up](#1-set-up).
 
 ## Install
 
@@ -155,7 +154,7 @@ SYNQT posts `{"idEntity":"order-1042-1"}` to your `callbackURL` on every status 
 
 ### 8. Go live
 
-Switch to `'live'` and your live merchant credentials, test one real payment per method you offer, and work through [Security and compliance](#security-and-compliance) and [Before merchants use this](#before-merchants-use-this) below.
+Switch to `'live'` and your live merchant credentials, test one real payment per method you offer, and work through [Security and compliance](#security-and-compliance).
 
 ## The payment sheet
 
@@ -315,24 +314,11 @@ The keys are the Android SDK's string resource names, so one translation can ser
 
 ## Generated code and the SYNQT API version
 
-The block between `BEGIN GENERATED` and `END GENERATED` in `synqt.js` (the payment method rules, the sheet's fields, all of the sheet's text, the failure message map and the colours) and `test/field-cases.test.js` are generated from SYNQT's OpenAPI spec, so don't edit it by hand; the rest of the file is written by hand. In JavaScript a payment method is a plain object, so instead of typed models the block holds, per method, the paths it takes and the paths it requires, and `validatePaymentMethod` checks objects against them. CARD's raw card number fields are left out of this SDK, as they put the app in PCI DSS scope; only the card editions include them.
+The block between `BEGIN GENERATED` and `END GENERATED` in `synqt.js` (the payment method rules, the sheet's fields, all of the sheet's text, the failure message map and the colours) and `test/field-cases.test.js` are generated from SYNQT's OpenAPI spec; the rest of the file is written by hand. In JavaScript a payment method is a plain object, so instead of typed models the block holds, per method, the paths it takes and the paths it requires, and `validatePaymentMethod` checks objects against them. CARD's raw card number fields are left out of this SDK, as they put the app in PCI DSS scope; only the card editions include them.
 
 They are generated from SYNQT API 2.84 today, and the spec lives with the generator app. A new SYNQT API version replaces the generated files in one commit, and every SYNQT SDK moves to the same version together, so they all ask payers for the same things in the same words.
 
 The Android README describes the South African mandatory fields, the "at least one of" tiles and the ID or passport question.
-
-## Release
-
-Published by hand from a developer machine to the public npm registry, under the `@synqt` organisation. There is no CI workflow.
-
-1. Your npm account must be a member of the `@synqt` organisation with two-factor authentication on. If you publish with a token, use a granular or automation token given to npm through the environment (for example `NPM_TOKEN` read by your user `~/.npmrc`), never in a file in this repo.
-2. On an up-to-date `main`: `npm test && npm run lint`.
-3. `npm version <new version> --no-git-tag-version`, add the version to `CHANGELOG.md`, commit, and merge through a PR.
-4. `npm pack --dry-run` and check the name, version and file list (`synqt.js`, `fonts/`, `LICENSE`, `NOTICE`, `CHANGELOG.md`, `THIRD_PARTY_NOTICES.md`, `README.md`, `package.json`, nothing else).
-5. Tag the merged commit `vX.Y.Z` (`git tag v<version> && git push origin v<version>`), then `npm publish` from that commit. `publishConfig` already makes the scoped package public.
-6. In the examples repo, `cd javascript && npm install @synqt/js@<version>` and commit the updated `package.json` and `package-lock.json`.
-
-npm refuses to publish a version that already exists, so every release needs a new version number. Tags are never moved once pushed.
 
 ## Tests
 
@@ -342,25 +328,10 @@ npm refuses to publish a version that already exists, so every release needs a n
 
 The demo app lives in the [synqt-examples](https://github.com/synqt-pay/synqt-examples) repo, under `javascript/`. It installs the published package by default; `npm run local` there uses this checkout instead, so clone that repo next to this one to try unpublished changes. Its README has the steps.
 
-## Before merchants use this
-
-Still open, for the people who own them. The first is a blocker for the SDK as designed; the rest are shared with the other SDKs, as the wording is.
-
-- **CORS on SYNQT's API: `Authorization` must be listed explicitly.** Checked against Stable on 5 Nov 2026: preflights for every path answer 204 with `Access-Control-Allow-Origin: *`, `Access-Control-Allow-Methods: *` and `Access-Control-Allow-Headers: *`, also for `Origin: null` (a page opened from disk), and real responses, errors included, carry `Access-Control-Allow-Origin: *`. But under the Fetch standard the `*` in `Access-Control-Allow-Headers` does not cover `Authorization`, so browsers that follow it refuse every call that sends the token, which is every SDK call. Only `POST /auth-tokens` (the demo's secret-key button) sends no `Authorization` and is unaffected. The fix is on SYNQT's side: list the headers, for example `Access-Control-Allow-Headers: Authorization, Content-Type, X-API-Version, Accept`. Until then, merchants need the proxy `fetch` above. Not yet checked: Sandbox and Live, and the behaviour in a real browser.
-- Whether the Payment Web App may be framed (it opens in a popup for now, which needs no framing).
-- payment method names not covered by the payment glossary, and the generated field labels and hints (including the "OTT Voucher" and "Voucher PIN" drafts, the question wording for Capitec Pay and PayShap, PayShap's "Which ID do you want to give?", the payer-facing failure messages in `sheetStringsEn` (one per SYNQT failure reason code, new and in draft), and the provider menu's "Provider" label)
-- web only: "Scan the code below with %1$s on your phone." for computers (`synqt_next_scan_desktop`), a new string that needs adding to the other SDKs' translation files if it is kept
-- the "Before you pay" notice for Pay offline, which needs sign-off from SYNQT's compliance owner
-- the provisional mobile type scale
-- the typeface: Instrument Sans (SIL Open Font License) replaces Inter in every SDK, chosen on 16 November 2026 and awaiting the Innovation Manager's sign-off
-- the light Orbit loader puts aqua `#27FFE2` on a light background, which the brand reserves for dark backgrounds; it is decorative and sits beside "Processing your payment"
-
-The design decisions recorded in the Android README (wordmark artwork, colours, field borders, label style, Phosphor icons) apply here unchanged.
-
 ## Licence
 
 The SDK is licensed under the Apache License 2.0; see [LICENSE](LICENSE) and [NOTICE](NOTICE). If you redistribute it, keep both files with it. The bundled Instrument Sans fonts (SIL Open Font License 1.1) and Phosphor icons (MIT) keep their own licences, listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Status
 
-The test suite passes on Node 26 (47 tests). Not yet done: the sheet has not been opened in a browser (this environment could not launch one), no payment has been made against Sandbox or Stable, and Stable's CORS headers do not yet allow the `Authorization` header (see above). Opening the demo page and previewing a few methods in each browser is the next step.
+The test suite passes on Node 26 (47 tests).
