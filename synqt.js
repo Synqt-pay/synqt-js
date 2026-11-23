@@ -1381,7 +1381,7 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
 .row .value { flex: 1; text-align: end; font-weight: 500; overflow-wrap: anywhere; }
 .num { font-variant-numeric: tabular-nums; }
 .row .copy-slot { width: 44px; flex: none; }
-.title { font-size: 1.25rem; font-weight: 400; margin: 24px 0 8px; }
+.title { font-size: 1.25rem; font-weight: 600; margin: 24px 0 8px; } /* ranks above the section headings (17 SemiBold) */
 .muted { color: var(--text-muted); }
 .intro { margin-bottom: 16px; }
 .section { font-size: 1.0625rem; font-weight: 600; margin: 8px 0 16px; display: block; }
@@ -1413,7 +1413,7 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
 .secure { display: flex; justify-content: center; align-items: center; gap: 8px; font-size: .8125rem; color: var(--text-muted); }
 .processing { position: absolute; inset: 0; background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 32px; gap: 8px; z-index: 2; }
 .processing canvas { width: 72px; height: 72px; margin-bottom: 16px; }
-.processing h2 { font-size: 1.25rem; font-weight: 400; }
+.processing h2 { font-size: 1.25rem; font-weight: 600; }
 .reference-card { border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin: 24px 0 8px; display: flex; flex-direction: column; align-items: flex-end; text-align: end; }
 .reference-line { display: flex; align-items: center; justify-content: flex-end; width: 100%; margin-right: -12px; }
 .reference-value { font-size: 1.5rem; font-weight: 600; overflow-wrap: anywhere; user-select: all; }
