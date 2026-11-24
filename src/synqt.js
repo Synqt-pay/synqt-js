@@ -673,7 +673,7 @@ const formStringsEn = {
 
 // Payer-facing text written for the payment sheet. Field labels, hints and method names are in formStringsEn.
 // Translations copy this with the same keys, keeping the placeholders, and are listed in `translations`. Keys and
-// text match the iOS, Android and Flutter SDKs. Draft wording awaiting sign-off is listed in the README.
+// text match the iOS, Android and Flutter SDKs.
 const sheetStringsEn = {
   // Form
   synqt_sheet_your_details: "Your details",
@@ -684,7 +684,7 @@ const sheetStringsEn = {
   synqt_sheet_no_preference: "No preference",
   synqt_sheet_hint_bank_code: "The code from your bank or provider",
   synqt_sheet_hint_provider_code: "The code from your provider",
-  // Shown in place of a mandatory bank or provider field when SYNQT's list didn't load after two automatic retries. Draft, 23 Nov 2026, awaiting the Innovation Manager.
+  // Shown in place of a mandatory bank or provider field when SYNQT's list didn't load after two automatic retries.
   synqt_sheet_banks_failed: "The list of banks could not be loaded. Check the connection and try again.",
   // The button that loads the list of banks again.
   synqt_sheet_try_again: "Try again",
@@ -822,7 +822,7 @@ const colorTokens = {
     "--surface-panel: #F0F0F0;",
     "--text: #1A1C29;",
     "--text-muted: #4E5670;",
-    "/* Example text in an empty field, lighter than typed text so it can't pass for it: 4.73:1 on the light surface, 4.96:1 on the dark one. Proposed 23 Nov 2026, awaiting the Innovation Manager. */",
+    "/* Example text in an empty field, lighter than typed text so it can't pass for it: 4.73:1 on the light surface, 4.96:1 on the dark one. */",
     "--placeholder: #6B7389;",
     "--on-accent: #1A1C29;",
     "--action: #B505BF;",
@@ -847,7 +847,7 @@ const colorTokens = {
     "--surface-panel: #212536;",
     "--text: #FFFFFF;",
     "--text-muted: #A7AFC5;",
-    "/* Example text in an empty field, lighter than typed text so it can't pass for it: 4.73:1 on the light surface, 4.96:1 on the dark one. Proposed 23 Nov 2026, awaiting the Innovation Manager. */",
+    "/* Example text in an empty field, lighter than typed text so it can't pass for it: 4.73:1 on the light surface, 4.96:1 on the dark one. */",
     "--placeholder: #838B9F;",
     "--on-accent: #1A1C29;",
     "--action: #F318FF;",
