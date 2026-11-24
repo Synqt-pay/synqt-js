@@ -3,10 +3,9 @@
   "version": "0.1.0",
   "description": "Take SYNQT payins in a web page: a Synqt-branded payment sheet, the direct API, and the hosted Payment Web App.",
   "license": "Apache-2.0",
-  "main": "synqt.js",
+  "main": "dist/synqt.js",
   "files": [
-    "synqt.js",
-    "fonts",
+    "dist",
     "LICENSE",
     "NOTICE",
     "CHANGELOG.md",
@@ -16,11 +15,16 @@
     "node": ">=20"
   },
   "scripts": {
+    "build": "node scripts/build.mjs",
+    "pretest": "npm run build",
     "test": "node --test test/",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "prepack": "npm run build",
+    "release-zip": "npm run build && rm -f synqt-js-$npm_package_version.zip && cd dist && zip -qrX ../synqt-js-$npm_package_version.zip . && cd .. && zip -qX synqt-js-$npm_package_version.zip LICENSE NOTICE THIRD_PARTY_NOTICES.md"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "esbuild": "0.28.2",
     "eslint": "^10.14.0",
     "globals": "^17.14.0"
   },

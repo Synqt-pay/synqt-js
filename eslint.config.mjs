@@ -2,6 +2,7 @@ import js from '@eslint/js';
 import globals from 'globals';
 
 export default [
+    {ignores: ['dist/']},
     js.configs.recommended,
     {
         files: ['**/*.js'],
@@ -13,7 +14,8 @@ export default [
             'no-unused-vars': ['error', {argsIgnorePattern: '^_', ignoreRestSiblings: true}],
         },
     },
-    // synqt.js exports to module.exports under Node for the tests, else sets a browser global.
-    {files: ['synqt.js'], languageOptions: {globals: {module: 'readonly'}}},
+    // src/synqt.js exports to module.exports under Node for the tests, else sets a browser global.
+    {files: ['src/synqt.js'], languageOptions: {globals: {module: 'readonly'}}},
+    {files: ['scripts/**'], languageOptions: {sourceType: 'module', globals: {...globals.node}}},
     {files: ['test/**'], languageOptions: {sourceType: 'commonjs', globals: {...globals.node}}},
 ];
