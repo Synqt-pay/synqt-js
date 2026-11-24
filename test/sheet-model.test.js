@@ -142,3 +142,53 @@ test('time left counts down to the expiry', () => {
   assert.equal(timeLeft('2026-10-27T13:00:00Z', now), '');
   assert.equal(timeLeft('not a time', now), undefined);
 });
+
+/** A sheet whose bank list could not be loaded. */
+const failedSheet = (code) =>
+  new PaymentSheetModel({
+    form: methodForms.find((methodForm) => methodForm.code === code),
+    prefill: {},
+    summary: { amount: 'R1.00', method: 'x', reference: 'o-1' },
+    submit: () => assert.fail('sent'),
+  });
+
+test('a mandatory bank field whose list did not load waits for Try again', async () => {
+  const model = failedSheet('OFFLINE');
+  const bank = model.inputs.find((field) => field.kind === 'paymentOperator');
+  const said = [];
+  model.announce = (message) => said.push(message);
+  assert.ok(model.banksMissing(bank));
+  // Pay marks it and goes to it, as the view focuses Try again there.
+  model.pay();
+  assert.equal(model.marks.paymentOperatorCode, 'Required');
+  assert.equal(model.focusRequest.path, 'paymentOperatorCode');
+  // A failed Try again keeps the state and says so.
+  model.reloadOperators = async () => undefined;
+  const failed = model.retryBanks();
+  assert.ok(model.loadingBanks);
+  await failed;
+  assert.ok(!model.loadingBanks && model.banksMissing(bank));
+  assert.equal(said.at(-1), 'The list of banks could not be loaded. Check the connection and try again.');
+  // A working one brings the dropdown back and clears its error.
+  model.reloadOperators = async () => [{ code: 'ABSA', name: 'Absa', externalProviders: [] }];
+  await model.retryBanks();
+  assert.ok(!model.banksMissing(bank));
+  assert.equal(model.marks.paymentOperatorCode, undefined);
+  assert.ok(model.options(bank).some((option) => option.value === 'ABSA'));
+});
+
+test('an optional bank field stays hidden when the list did not load', () => {
+  const model = failedSheet('CAPITEC_PAY');
+  assert.ok(!model.inputs.some((field) => field.kind === 'paymentOperator'));
+});
+
+test('the intro line shows only when there is nothing to enter', () => {
+  assert.equal(sheet('CAPITEC_PAY', {}).intro, undefined);
+  const empty = new PaymentSheetModel({
+    form: { code: 'X', name: 'synqt_zapper', fields: [], oneOfs: [] },
+    prefill: {},
+    operators: [],
+    summary: { amount: 'R1.00', method: 'x', reference: 'o-1' },
+  });
+  assert.equal(empty.intro, 'No details needed. Tap Pay to continue.');
+});

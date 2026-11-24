@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const SDK = require('../synqt.js');
 
-const { isReturn, formatMoney, Money, parseCreatePayin, parseErrors, parsePayinStatus, SynqtAPIError, SynqtArgumentError, Synqt, ease, orbitDot } = { ...SDK, ...SDK.internals };
+const { isReturn, formatMoney, Money, parseCreatePayin, parseErrors, parsePayinStatus, SynqtAPIError, SynqtArgumentError, Synqt, ease, orbitDot, methodForms } = { ...SDK, ...SDK.internals };
 
 /** A fetch that records each request and answers with `reply(request)`: `[status, body]`. */
 function fakeFetch(reply) {
@@ -145,4 +145,46 @@ test('options parse and a refusal keeps its codes', async () => {
   assert.equal((await payment.availablePaymentOptions()).at(0).operators.at(0).name, 'Banco Ñ');
   assert.deepEqual(sent[0].json, { money: { amount: 12.3, currencyCode: 'ZAR' } });
   await assert.rejects(payment.status(), (error) => error.httpCode === 401 && error.errors[0].code === 'TOKEN_EXPIRED');
+});
+
+/** The sheet's bank list for Pay offline, with SYNQT answering each request with the next of `statuses` (the last repeats). */
+async function sheetBanks(statuses, signal, onRequest = () => {}) {
+  let requests = 0;
+  const { fetch } = fakeFetch(() => {
+    onRequest();
+    const status = statuses[Math.min(requests++, statuses.length - 1)];
+    return [status, status === 200 ? '{"data":[{"paymentMethodCode":"OFFLINE","paymentOperators":[{"code":"ABSA","name":"Absa"}]}]}' : '{"errors":[]}'];
+  });
+  const loaded = await payin('order-1', fetch)._sheetOperators(methodForms.find((form) => form.code === 'OFFLINE'), signal, 1);
+  return { loaded, requests };
+}
+
+test('the bank list is tried twice more after a server error, then loads', async () => {
+  const { loaded, requests } = await sheetBanks([503, 500, 200]);
+  assert.deepEqual(loaded.map((operator) => operator.code), ['ABSA']);
+  assert.equal(requests, 3);
+});
+
+test('three server errors mean the bank list could not be loaded', async () => {
+  assert.deepEqual(await sheetBanks([503]), { loaded: undefined, requests: 3 });
+});
+
+test('a refusal of the bank list is not retried', async () => {
+  assert.deepEqual(await sheetBanks([403]), { loaded: undefined, requests: 1 });
+});
+
+test('closing the sheet stops the bank list retries', async () => {
+  const controller = new AbortController();
+  assert.deepEqual(await sheetBanks([503], controller.signal, () => controller.abort()), { loaded: undefined, requests: 1 });
+});
+
+test('app links are judged on the scheme the browser parses, so control characters and tabs cannot hide javascript:', () => {
+    const { isUnsafeLink } = SDK.internals;
+    for (const link of ['javascript:alert(1)', ' JavaScript:alert(1)', '\u0001javascript:alert(1)', '\u001fjavascript:alert(1)',
+        'java\tscript:alert(1)', 'java\nscript:alert(1)', 'data:text/html,x', 'vbscript:x', 'file:///etc/hosts', 'not a url']) {
+        assert.equal(isUnsafeLink(link), true, JSON.stringify(link));
+    }
+    for (const link of ['https://pay.example/x', 'zapper://pay?x=1', 'snapscan://x', 'upi://pay?pa=x@bank']) {
+        assert.equal(isUnsafeLink(link), false, link);
+    }
 });

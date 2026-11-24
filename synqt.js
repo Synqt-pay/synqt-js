@@ -676,7 +676,6 @@ const formStringsEn = {
 const sheetStringsEn = {
   // Form
   synqt_sheet_your_details: "Your details",
-  synqt_sheet_intro: "Enter your details to pay with %1$s.",
   synqt_sheet_intro_nothing_to_enter: "No details needed. Tap Pay to continue.",
   synqt_sheet_pay: "Pay %1$s",
   synqt_sheet_secure_checkout: "Secure checkout",
@@ -684,6 +683,10 @@ const sheetStringsEn = {
   synqt_sheet_no_preference: "No preference",
   synqt_sheet_hint_bank_code: "The code from your bank or provider",
   synqt_sheet_hint_provider_code: "The code from your provider",
+  // Shown in place of a mandatory bank or provider field when SYNQT's list didn't load after two automatic retries. Draft, 23 Nov 2026, awaiting the Innovation Manager.
+  synqt_sheet_banks_failed: "The list of banks could not be loaded. Check the connection and try again.",
+  // The button that loads the list of banks again.
+  synqt_sheet_try_again: "Try again",
   synqt_sheet_required: "Required",
   synqt_sheet_check_field: "Check this field",
   // A field's label, then its error, in the banner when the field itself is not shown.
@@ -818,6 +821,8 @@ const colorTokens = {
     "--surface-panel: #F0F0F0;",
     "--text: #1A1C29;",
     "--text-muted: #4E5670;",
+    "/* Example text in an empty field, lighter than typed text so it can't pass for it: 4.73:1 on the light surface, 4.96:1 on the dark one. Proposed 23 Nov 2026, awaiting the Innovation Manager. */",
+    "--placeholder: #6B7389;",
     "--on-accent: #1A1C29;",
     "--action: #B505BF;",
     "--on-action: #FFFFFF;",
@@ -841,6 +846,8 @@ const colorTokens = {
     "--surface-panel: #212536;",
     "--text: #FFFFFF;",
     "--text-muted: #A7AFC5;",
+    "/* Example text in an empty field, lighter than typed text so it can't pass for it: 4.73:1 on the light surface, 4.96:1 on the dark one. Proposed 23 Nov 2026, awaiting the Innovation Manager. */",
+    "--placeholder: #838B9F;",
     "--on-accent: #1A1C29;",
     "--action: #F318FF;",
     "--on-action: #1A1C29;",
@@ -1381,9 +1388,10 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
 .row .value { flex: 1; text-align: end; font-weight: 500; overflow-wrap: anywhere; }
 .num { font-variant-numeric: tabular-nums; }
 .row .copy-slot { width: 44px; flex: none; }
-.title { font-size: 1.25rem; font-weight: 400; margin: 24px 0 8px; }
+.title { font-size: 1.25rem; font-weight: 600; margin: 24px 0 8px; } /* ranks above the section headings (17 SemiBold) */
 .muted { color: var(--text-muted); }
 .intro { margin-bottom: 16px; }
+.title.no-intro { margin-bottom: 16px; }
 .section { font-size: 1.0625rem; font-weight: 600; margin: 8px 0 16px; display: block; }
 .field { margin-bottom: 16px; }
 .field label { display: block; font-weight: 500; margin-bottom: 8px; }
@@ -1394,7 +1402,7 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
 .field select { padding-right: 48px; background-image: none; }
 .select { position: relative; }
 .select .icon { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; }
-.field input::placeholder { color: var(--text-muted); opacity: 1; }
+.field input::placeholder { color: var(--placeholder); opacity: 1; }
 .field input:focus, .field select:focus { outline: none; border: 2px solid var(--focus-ring); padding-left: 15px; }
 .field [aria-invalid="true"] { border-color: var(--danger); }
 .help { font-size: .8125rem; color: var(--text-muted); margin-top: 4px; }
@@ -1410,10 +1418,22 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
 .button { min-height: 48px; width: 100%; padding: 12px 24px; border-radius: 999px; border: 0; font: inherit; font-weight: 500; font-variant-numeric: tabular-nums; cursor: pointer; background: var(--action); color: var(--on-action); }
 .button:hover { box-shadow: inset 0 0 0 100px var(--pressed-overlay); }
 .button.outline { background: var(--surface); color: var(--text); border: 1px solid var(--border-control); }
-.secure { display: flex; justify-content: center; align-items: center; gap: 8px; font-size: .8125rem; color: var(--text-muted); }
+.field .label { font-weight: 500; margin-bottom: 8px; }
+.banks-failed .banner { margin-bottom: 8px; }
+.button[aria-disabled="true"] { position: relative; cursor: default; box-shadow: none; }
+/* The text stays, unseen, as the button's name while the loader shows. */
+.button[aria-disabled="true"] span { opacity: 0; }
+.button .spinner { position: absolute; inset: 0; margin: auto; width: 28px; height: 28px; color: var(--text); }
+.secure { display: flex; align-items: center; justify-content: center; text-align: center; gap: 8px; margin-top: 12px; font-size: .8125rem; color: var(--text-muted); }
+/* Short viewports (landscape phones, high browser zoom): the fixed bars give the form their room back. */
+@media (max-height: 500px) {
+  dialog { max-height: 100dvh; }
+  header { padding-block: 0; }
+  footer { padding-bottom: 8px; }
+}
 .processing { position: absolute; inset: 0; background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 32px; gap: 8px; z-index: 2; }
 .processing canvas { width: 72px; height: 72px; margin-bottom: 16px; }
-.processing h2 { font-size: 1.25rem; font-weight: 400; }
+.processing h2 { font-size: 1.25rem; font-weight: 600; }
 .reference-card { border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin: 24px 0 8px; display: flex; flex-direction: column; align-items: flex-end; text-align: end; }
 .reference-line { display: flex; align-items: center; justify-content: flex-end; width: 100%; margin-right: -12px; }
 .reference-value { font-size: 1.5rem; font-weight: 600; overflow-wrap: anywhere; user-select: all; }
@@ -1428,7 +1448,9 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
 .qr-box { width: 240px; height: 240px; padding: 12px; background: #FFFFFF; border: 1px solid var(--border); border-radius: 12px; }
 .qr-box img { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
 .qr p { font-size: .8125rem; margin-top: 8px; text-align: center; }
-.toast { position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%); background: var(--text); color: var(--surface); padding: 8px 16px; border-radius: 999px; z-index: 3; white-space: nowrap; }
+/* A zero-height anchor between the form and the footer: the toast sits just above the footer, however tall it is. */
+.toast-anchor { position: relative; height: 0; }
+.toast { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); background: var(--text); color: var(--surface); padding: 8px 16px; border-radius: 999px; z-index: 3; white-space: nowrap; }
 .toast:empty { display: none; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 `;
@@ -1511,14 +1533,20 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
      */
     class PaymentSheetModel {
         /**
-         * @param {{form: object, prefill: Record<string, string>, operators: object[], summary: {amount: string, merchant?: string, method: string, reference: string}, submit: (method: object) => Promise<object>}} p
+         * `operators` is undefined when SYNQT's list could not be loaded.
+         * @param {{form: object, prefill: Record<string, string>, operators?: object[], summary: {amount: string, merchant?: string, method: string, reference: string}, submit: (method: object) => Promise<object>}} p
          */
         constructor({form, prefill, operators, summary, submit}) {
             this.form = form;
             this.summary = summary;
             this.methodName = text(form.name);
+            /** SYNQT's list of banks and providers could not be loaded, so a mandatory bank or provider field can't be filled in. */
+            this.banksFailed = operators === undefined;
+            this.loadingBanks = false;
+            operators ??= [];
             this._operators = operators;
             this._submit = submit;
+            this._closed = new AbortController();
             /** The fields the payer could fill in: an optional bank with no list from SYNQT has nothing to choose, so it goes. */
             this.inputs = form.fields.filter((field) => !(field.kind === 'paymentOperator' && operators.length === 0 && !field.required));
             /** @type {Record<string, string>} */
@@ -1580,6 +1608,40 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
             /** Reads text out to screen reader users without moving their focus. */
             this.announce = (_message) => {
             };
+            /** Loads the banks and providers again, as the sheet first did, until `signal` aborts; undefined if they still could not be loaded. */
+            this.reloadOperators = async (_signal) => undefined;
+        }
+
+        /**
+         * A mandatory bank or provider field shown as "couldn't load" with Try again, as the payer can't fill it in. An
+         * optional one stays as it was without a list: a bank field is hidden, a provider field takes a typed code.
+         */
+        banksMissing(field) {
+            return this.banksFailed && field.required && (field.kind === 'paymentOperator' || field.kind === 'provider');
+        }
+
+        /** Try again: loads the banks and providers once more, with the same retries; the fields come back on success. */
+        async retryBanks() {
+            if (!this.banksFailed || this.loadingBanks) return;
+            this.loadingBanks = true;
+            this.onChange();
+            const loaded = await this.reloadOperators(this._closed.signal);
+            this.loadingBanks = false;
+            if (!loaded) {
+                this.onChange();
+                return this.announce(text('synqt_sheet_banks_failed'));
+            }
+            this._operators = loaded;
+            this.banksFailed = false;
+            for (const field of this.inputs) {
+                if (field.kind !== 'paymentOperator' && field.kind !== 'provider') continue;
+                delete this.marks[field.path];
+                this._invalid.delete(field.path);
+                this._refused.delete(field.path);
+                // A provider typed before the list came is kept only if it is one of the listed ones.
+                if (!this.options(field)?.some((option) => option.value === this.values[field.path])) this.values[field.path] = '';
+            }
+            this.onChange();
         }
 
         /** Everything mandatory came from the page, so pay straight away; any refusal brings the form back with the error. */
@@ -1622,8 +1684,9 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
             return this.inputs.length > 0 && !this.inputs.some((field) => this.visible(field.path));
         }
 
+        /** The line under "Your details", only when there is nothing to enter. */
         get intro() {
-            return this.inputs.length === 0 ? text('synqt_sheet_intro_nothing_to_enter') : text('synqt_sheet_intro', this.methodName);
+            return this.inputs.length === 0 ? text('synqt_sheet_intro_nothing_to_enter') : undefined;
         }
 
         /** The payer typed in a field. As the Android sheet's length filter, longer input is cut off. */
@@ -1733,6 +1796,7 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
         finish(result) {
             if (this._finished) return;
             this._finished = true;
+            this._closed.abort(); // stops a Try again still retrying
             this.onFinish(result);
         }
 
@@ -1853,7 +1917,16 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
     }
 
 // Links come from SYNQT's response; anything that would run in this page is never opened.
-    const UNSAFE_LINK = /^\s*(javascript|data|vbscript|file):/i;
+    // Judged on the scheme the browser will use: its URL parser drops leading control characters and any tab or
+    // newline, which a check on the raw text misses ("\u0001javascript:", "java\tscript:"). Unparseable links are refused.
+    const UNSAFE_SCHEMES = new Set(['javascript:', 'data:', 'vbscript:', 'file:']);
+    const isUnsafeLink = (link) => {
+        try {
+            return UNSAFE_SCHEMES.has(new URL(link).protocol);
+        } catch {
+            return true;
+        }
+    };
     const QR_IMAGE = /^(https:|data:image\/)/i;
 
     /** The value, unless it is blank or the "-" SYNQT sends for a detail it does not have. */
@@ -1867,6 +1940,9 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
         'customerName.middleName': 'additional-name',
         'customerName.lastName': 'family-name',
         'customerName.titleAfter': 'honorific-suffix',
+        'account.accountName': 'name',
+        'paymentLocation.postalCode': 'postal-code',
+        'paymentLocation.city': 'address-level2',
     };
 
     /**
@@ -1903,19 +1979,26 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
             loader,
             el('h2', {}, text('synqt_sheet_processing')),
             el('p', {class: 'muted'}, text('synqt_sheet_processing_detail')));
-        const dialog = el('dialog', {'aria-label': text('synqt_sheet_pay', model.summary.amount)}, header, body, footer, processing, toast, live);
+        const dialog = el('dialog', {'aria-label': text('synqt_sheet_pay', model.summary.amount)}, header, body, el('div', {class: 'toast-anchor'}, toast), footer, processing, live);
         root.append(el('style', {}, css), dialog);
 
         // The form, built once; update() shows, hides and fills its parts.
         const fields = new Map();
+        /** Mandatory bank or provider fields whose list didn't load, by path, each shown as its label, why, and Try again. */
+        const missing = new Map();
+        let ids = 0;
         const headings = [];
         const questions = [];
-        const details = [el('h2', {class: 'title'}, text('synqt_sheet_your_details')), el('p', {class: 'muted intro'}, model.intro)];
+        const details = model.intro
+            ? [el('h2', {class: 'title'}, text('synqt_sheet_your_details')), el('p', {class: 'muted intro'}, model.intro)]
+            : [el('h2', {class: 'title no-intro'}, text('synqt_sheet_your_details'))];
         const banner = el('div', {class: 'banner', tabindex: '-1', hidden: true});
-        formView.append(summaryCard(model.summary.amount, true), ...details);
+        const errorBanner = (message) => el('div', {class: 'banner'}, el('span', {html: icon('warning')}).firstChild, el('span', {}, message));
+        formView.append(summaryCard(model.summary.amount, true, true), ...details);
 
         const field = (formField) => {
-            const id = `f${fields.size}`;
+            const id = `f${ids++}`;
+            if (model.banksMissing(formField)) return banksFailed(formField, id);
             const options = model.options(formField);
             const help = el('p', {class: 'help', id: id + 'h'});
             const common = {id, 'aria-describedby': id + 'h', required: formField.required};
@@ -1978,12 +2061,22 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
         }
         formView.append(banner);
 
+        function banksFailed(formField, id) {
+            // Disabled with aria-disabled while loading, so focus stays on it; the text stays in it as its name.
+            const retry = el('button', {type: 'button', class: 'button outline', onclick: () => model.retryBanks()},
+                el('span', {}, text('synqt_sheet_try_again')));
+            const wrap = el('div', {class: 'field banks-failed', role: 'group', 'aria-labelledby': id},
+                el('div', {class: 'label', id}, text(formField.label)), errorBanner(text('synqt_sheet_banks_failed')), retry);
+            missing.set(formField.path, {formField, wrap, retry, stop: undefined});
+            return wrap;
+        }
+
         const pay = el('button', {
             type: 'button',
             class: 'button',
             onclick: () => model.pay()
         }, text('synqt_sheet_pay', model.summary.amount));
-        footer.append(pay, el('div', {class: 'secure'}, el('span', {html: icon('lock', 16)}).firstChild, text('synqt_sheet_secure_checkout')));
+        footer.append(pay);
 
         function update() {
             if (model.next && !nextBuilt) buildNext(model.next);
@@ -1992,6 +2085,32 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
             for (const {el: box, questionIndex, radios} of questions) {
                 box.hidden = !model.questionVisible(questionIndex);
                 radios.forEach((radio, index) => (radio.checked = model.form.oneOfs[questionIndex].choices[index] === model.chosen[questionIndex]));
+            }
+            // The list loaded on Try again: each failed block becomes its field, and a provider typed for want of a list its dropdown.
+            for (const [path, {formField, wrap, input}] of [...missing, ...fields]) {
+                if (model.banksMissing(formField) || (input && (input.tagName === 'SELECT' || !model.options(formField)))) continue;
+                const fresh = field(formField); // a typed code if SYNQT listed none, as on first load
+                wrap.replaceWith(fresh);
+                if (missing.get(path)?.retry === root.activeElement) fresh.querySelector('select, input').focus();
+                missing.get(path)?.stop?.();
+                missing.delete(path);
+            }
+            for (const entry of missing.values()) {
+                entry.wrap.hidden = !model.visible(entry.formField.path);
+                entry.retry.setAttribute('aria-disabled', String(model.loadingBanks));
+                if (model.loadingBanks && !entry.stop) {
+                    const spinner = el('canvas', {class: 'spinner'});
+                    entry.retry.append(spinner);
+                    const stopSpin = orbitLoader(spinner);
+                    entry.stop = () => {
+                        stopSpin();
+                        spinner.remove();
+                    };
+                }
+                if (!model.loadingBanks && entry.stop) {
+                    entry.stop();
+                    entry.stop = undefined;
+                }
             }
             for (const {formField, wrap, input, help} of fields.values()) {
                 wrap.hidden = !model.visible(formField.path);
@@ -2017,7 +2136,7 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
             const request = model.focusRequest;
             if (request && request.count !== focusCount) {
                 focusCount = request.count;
-                const target = request.path === 'banner' ? banner : fields.get(request.path)?.input;
+                const target = request.path === 'banner' ? banner : fields.get(request.path)?.input ?? missing.get(request.path)?.retry;
                 queueMicrotask(() => {
                     target?.focus({preventScroll: true});
                     target?.scrollIntoView({block: 'center', behavior: 'smooth'});
@@ -2025,7 +2144,7 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
             }
         }
 
-        function summaryCard(amount, showReference) {
+        function summaryCard(amount, showReference, secure = false) {
             const summary = model.summary;
             return el('div', {class: 'card'},
                 // Eyebrow, not brand magenta: magenta on the light panel is 2.89:1.
@@ -2034,7 +2153,8 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
                 el('hr', {class: 'rule'}),
                 summary.merchant && row(text('synqt_sheet_paying'), summary.merchant),
                 row(text('synqt_sheet_payment_method'), summary.method),
-                showReference && row(text('synqt_sheet_reference'), summary.reference));
+                showReference && row(text('synqt_sheet_reference'), summary.reference),
+                secure && el('div', {class: 'secure'}, el('span', {html: icon('lock', 16)}).firstChild, text('synqt_sheet_secure_checkout')));
         }
 
         /** A label and value; with `copy`, a button that copies that text. With `copyColumn` every row keeps the button's column. */
@@ -2051,8 +2171,6 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
             return el('div', {class: 'row'}, el('span', {class: 'label'}, label), el('span', {class: 'value'}, value), button);
         }
 
-        const errorBanner = (message) => el('div', {class: 'banner'}, el('span', {html: icon('warning')}).firstChild, el('span', {}, message));
-
         /** What the payer does after SYNQT accepted the payment, for methods finished in another app or by bank transfer. */
         function buildNext(nextStep) {
             nextBuilt = true;
@@ -2061,7 +2179,7 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
             const amount = nextStep.amountToPay ? String(nextStep.amountToPay) : model.summary.amount;
             const qr = nextStep.qrCodeImageURL && QR_IMAGE.test(nextStep.qrCodeImageURL) ? nextStep.qrCodeImageURL : undefined;
             // On a computer the QR code is the way to pay; the app link is offered there only when there is no QR code.
-            const offerApp = nextStep.appLink && !UNSAFE_LINK.test(nextStep.appLink) && (coarse || !qr);
+            const offerApp = nextStep.appLink && !isUnsafeLink(nextStep.appLink) && (coarse || !qr);
             const how = transfer ? text('synqt_next_transfer')
                 : offerApp && qr ? text('synqt_next_open_or_scan', name)
                     : offerApp ? text('synqt_next_open', name)
@@ -2201,7 +2319,7 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
                 if (message) setTimeout(() => (live.textContent = message), 50);
             };
             model.openLink = (link) => {
-                if (UNSAFE_LINK.test(link)) return false;
+                if (isUnsafeLink(link)) return false;
                 const popup = window.open(link, '_blank');
                 if (popup) popup.opener = null;
                 return !!popup;
@@ -2209,6 +2327,7 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
             model.onFinish = (result) => {
                 timers.forEach(clearInterval);
                 stopLoader?.();
+                missing.forEach((entry) => entry.stop?.());
                 model.onChange = () => {
                 }; // a late reply from SYNQT changes nothing on screen
                 dialog.close();
@@ -2254,6 +2373,9 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
     function showPaymentApp(url, returnURL, {onPresented, signal} = {}) {
         const popup = window.open(url, 'synqt-payment', 'popup,width=480,height=760');
         if (!popup) throw new SynqtArgumentError('The browser blocked the Payment Web App window. Call presentPaymentApp from a click handler.');
+        // Pages in the popup (the Payment Web App and any bank page it reaches) must not be able to navigate this tab.
+        // The SDK keeps its own handle, so polling for the return still works.
+        popup.opener = null;
         return new Promise((resolve) => {
             const finish = (result) => {
                 clearInterval(timer);
@@ -2399,7 +2521,7 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
                                   }) {
             const form = methodForms.find((methodForm) => methodForm.code === paymentMethodCode);
             if (!form) throw new SynqtArgumentError(`Unknown paymentMethodCode ${paymentMethodCode}`);
-            const {operators, merchant} = await this._sheetContext(form);
+            const {operators, merchant} = await this._sheetContext(form, signal);
             if (signal?.aborted) return null;
             const model = new PaymentSheetModel({
                 form,
@@ -2409,6 +2531,7 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
                 submit: (method) => this.create(method, {customerIP}),
             });
             if (onPaymentStarted) model.onPaymentStarted = onPaymentStarted;
+            model.reloadOperators = (stop) => this._sheetOperators(form, stop);
             return showPaymentSheet(model, {onPresented, signal});
         }
 
@@ -2437,19 +2560,37 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
         }
 
         /**
-         * Banks and providers for `form`'s bank or provider field, and the merchant's name for the summary. Both are
-         * niceties: without the bank list the sheet hides an optional bank field or asks for the code, and without the
-         * merchant name the summary leaves that row out.
+         * Banks and providers for `form`'s bank or provider field (undefined if they could not be loaded), and the
+         * merchant's name for the summary, which is a nicety: without it the summary leaves that row out.
          */
-        async _sheetContext(form) {
+        async _sheetContext(form, signal) {
             const needsOperators = form.fields.some((field) => field.kind === 'paymentOperator' || field.kind === 'provider');
             const [operators, merchant] = await Promise.all([
-                needsOperators
-                    ? this.availablePaymentOptions().then((options) => options.find((option) => option.code === form.code)?.operators, () => undefined)
-                    : undefined,
+                needsOperators ? this._sheetOperators(form, signal) : [],
                 this._call('GET', '/merchant-info').then((body) => JSON.parse(body)?.channelInfo?.name || undefined, () => undefined),
             ]);
-            return {operators: operators ?? [], merchant: typeof merchant === 'string' ? merchant : undefined};
+            return {operators, merchant: typeof merchant === 'string' ? merchant : undefined};
+        }
+
+        /**
+         * SYNQT's banks and providers for `form`, empty if it lists none, or undefined if they could not be loaded. A
+         * failed connection or a SYNQT server error is tried twice more, `retryAfter` ms apart; a refusal such as 403 is
+         * not. `signal` stops the retries.
+         */
+        async _sheetOperators(form, signal, retryAfter = 2000) {
+            for (let attempt = 0; attempt < 3; attempt++) {
+                if (attempt > 0) await new Promise((resolve) => {
+                    const timer = setTimeout(resolve, retryAfter);
+                    signal?.addEventListener('abort', () => resolve(clearTimeout(timer)), {once: true});
+                });
+                if (signal?.aborted) return undefined;
+                try {
+                    return (await this.availablePaymentOptions()).find((option) => option.code === form.code)?.operators ?? [];
+                } catch (error) {
+                    if (error instanceof SynqtAPIError && error.httpCode < 500) return undefined;
+                }
+            }
+            return undefined;
         }
     }
 
@@ -2595,6 +2736,7 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
             payinErrors,
             timeLeft,
             isReturn,
+            isUnsafeLink,
             orbitDot,
             ease,
         },
