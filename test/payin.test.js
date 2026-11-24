@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
-const SDK = require('../synqt.js');
+const SDK = require('../src/synqt.js');
 
 const { isReturn, formatMoney, Money, parseCreatePayin, parseErrors, parsePayinStatus, SynqtAPIError, SynqtArgumentError, Synqt, ease, orbitDot, methodForms } = { ...SDK, ...SDK.internals };
 

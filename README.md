@@ -9,7 +9,7 @@ This SDK has no card fields. It never collects, sees or sends a card number, whi
 ## Requirements
 
 - A current browser: Chrome, Edge, Firefox or Safari from 2023 on (it uses `<dialog>`, `:has()`, `inert` and `AbortSignal.timeout`).
-- One plain JavaScript file, `synqt.js`, with no build step, no dependencies and no modules. It sets one global, `SynqtSDK`.
+- One script, `synqt.min.js`, with no dependencies and no modules. It sets one global, `SynqtSDK`.
 - A backend of your own that mints a SYNQT token for each order. The page never holds the merchant's private key or secret key.
 
 ## Install
@@ -20,31 +20,35 @@ From npm:
 npm install @synqt/js
 ```
 
-The package is `synqt.js`, the `fonts` folder beside it, `LICENSE`, `NOTICE`, `CHANGELOG.md` and `THIRD_PARTY_NOTICES.md`. `synqt.js` is a classic script, not a module, so a bundler can't import it. Serve the package folder (or copy `synqt.js` and `fonts/` together into your static files, for example in your build's copy step) and load `synqt.js` with a script tag. It finds its fonts from its own URL, so keep `fonts/` next to it:
+The package's `dist` folder holds `synqt.min.js`, its source map `synqt.min.js.map`, a readable `synqt.js`, and the `fonts` folder beside them; `LICENSE`, `NOTICE`, `CHANGELOG.md` and `THIRD_PARTY_NOTICES.md` sit at the top. The script is a classic script, not a module, so a bundler can't import it. Serve the `dist` folder (or copy `synqt.min.js`, its map and `fonts/` together into your static files, for example in your build's copy step) and load `synqt.min.js` with a script tag. It finds its fonts from its own URL, so keep `fonts/` next to it:
 
 ```html
-<script src="/node_modules/@synqt/js/synqt.js"></script>
+<script src="/node_modules/@synqt/js/dist/synqt.min.js"></script>
 ```
 
 ### From a CDN
 
-jsDelivr serves the npm package as it is, so the fonts load from the same folder as `synqt.js` with nothing to copy:
+jsDelivr serves the npm package as it is, so the fonts load from the same folder as `synqt.min.js` with nothing to copy:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@synqt/js@0.1.0/synqt.js"
+<script src="https://cdn.jsdelivr.net/npm/@synqt/js@0.1.0/dist/synqt.min.js"
         integrity="sha384-<hash>"
         crossorigin="anonymous"></script>
 ```
 
-Pin the exact version, never a range or `@latest`, and add Subresource Integrity so the browser refuses a file that has changed. To get the hash, either press the SRI button next to `synqt.js` on the package's jsDelivr page and copy the `integrity` value, or compute it from the published file yourself:
+Pin the exact version, never a range or `@latest`, and add Subresource Integrity so the browser refuses a file that has changed. To get the hash, either press the SRI button next to `dist/synqt.min.js` on the package's jsDelivr page and copy the `integrity` value, or compute it from the published file yourself:
 
 ```
 npm pack @synqt/js@0.1.0
-tar -xzf synqt-js-0.1.0.tgz package/synqt.js
-echo "sha384-$(openssl dgst -sha384 -binary package/synqt.js | openssl base64 -A)"
+tar -xzf synqt-js-0.1.0.tgz package/dist/synqt.min.js
+echo "sha384-$(openssl dgst -sha384 -binary package/dist/synqt.min.js | openssl base64 -A)"
 ```
 
 If your page has a Content Security Policy, allow `https://cdn.jsdelivr.net` in `script-src` and `font-src`.
+
+### From GitHub Releases
+
+Each [release](https://github.com/synqt-pay/synqt-js/releases) has a `synqt-js-<version>.zip` with the built files: `synqt.min.js`, its source map, a readable `synqt.js`, the `fonts` folder, `LICENSE`, `NOTICE` and `THIRD_PARTY_NOTICES.md`. Unzip it into your static files, keeping `fonts/` next to the script. The repository itself holds only the source in `src/`, so a download of the repository needs a build first (see [Building](#building)).
 
 ## Integrating the SDK, step by step
 
@@ -52,16 +56,16 @@ Steps 1 and 2 happen once; steps 3 to 7 happen for every order.
 
 ### 1. Add the SDK to your project
 
-Install the package (see [Install](#install)), or copy `synqt.js` and the `fonts` folder next to each other on your site. Then load it with a plain script tag before your own code:
+Install the package (see [Install](#install)), or copy `synqt.min.js`, `synqt.min.js.map` and the `fonts` folder from `dist` next to each other on your site. Then load it with a plain script tag before your own code:
 
 ```html
-<script src="/js/synqt.js"></script>
+<script src="/js/synqt.min.js"></script>
 <script>
   const { Synqt, Money } = SynqtSDK;
 </script>
 ```
 
-The SDK brings its own strings, and loads Instrument Sans from the `fonts` folder beside `synqt.js`. If the fonts can't be loaded (a page opened from disk, or a strict Content Security Policy without `font-src 'self'`), the sheet uses the system font instead.
+The SDK brings its own strings, and loads Instrument Sans from the `fonts` folder beside `synqt.min.js`. If the fonts can't be loaded (a page opened from disk, or a strict Content Security Policy without `font-src 'self'`), the sheet uses the system font instead.
 
 Sites that ship the SDK must include the Phosphor Icons MIT notice and the Instrument Sans OFL notice in `THIRD_PARTY_NOTICES.md`, for example on a credits page.
 
@@ -298,10 +302,10 @@ A payin ID can be used once. Calling `create` again with the same ID is a safe r
 
 Every piece of text the SDK shows a payer is a string key, so the sheet follows the browser's language once translations exist:
 
-- `sheetStringsEn` in `synqt.js`, inside the generated block: the sheet's own text (headings, buttons, next-step, error and failure messages), with the same wording in every SYNQT SDK.
-- `formStringsEn` in `synqt.js`, inside the generated block: method names, field labels, hints, validation messages and question wording, generated with the code that uses it (see below).
+- `sheetStringsEn` in `src/synqt.js`, inside the generated block: the sheet's own text (headings, buttons, next-step, error and failure messages), with the same wording in every SYNQT SDK.
+- `formStringsEn` in `src/synqt.js`, inside the generated block: method names, field labels, hints, validation messages and question wording, generated with the code that uses it (see below).
 
-The keys are the Android SDK's string resource names, so one translation can serve every platform. To add a language, copy both objects (for example to `sheetStringsAf` and `formStringsAf`), translate the text keeping the keys and the `%1$s` placeholders, and list them in `translations` in `synqt.js`. A string with no translation falls back to English. Bank and provider names stay in English, as they come from SYNQT's servers.
+The keys are the Android SDK's string resource names, so one translation can serve every platform. To add a language, copy both objects (for example to `sheetStringsAf` and `formStringsAf`), translate the text keeping the keys and the `%1$s` placeholders, and list them in `translations` in `src/synqt.js`, then run `npm run build`. A string with no translation falls back to English. Bank and provider names stay in English, as they come from SYNQT's servers.
 
 ## Security and compliance
 
@@ -314,15 +318,19 @@ The keys are the Android SDK's string resource names, so one translation can ser
 
 ## Generated code and the SYNQT API version
 
-The block between `BEGIN GENERATED` and `END GENERATED` in `synqt.js` (the payment method rules, the sheet's fields, all of the sheet's text, the failure message map and the colours) and `test/field-cases.test.js` are generated from SYNQT's OpenAPI spec; the rest of the file is written by hand. In JavaScript a payment method is a plain object, so instead of typed models the block holds, per method, the paths it takes and the paths it requires, and `validatePaymentMethod` checks objects against them. CARD's raw card number fields are left out of this SDK, as they put the app in PCI DSS scope; only the card editions include them.
+The block between `BEGIN GENERATED` and `END GENERATED` in `src/synqt.js` (the payment method rules, the sheet's fields, all of the sheet's text, the failure message map and the colours) and `test/field-cases.test.js` are generated from SYNQT's OpenAPI spec; the rest of the file is written by hand. In JavaScript a payment method is a plain object, so instead of typed models the block holds, per method, the paths it takes and the paths it requires, and `validatePaymentMethod` checks objects against them. CARD's raw card number fields are left out of this SDK, as they put the app in PCI DSS scope; only the card editions include them.
 
 They are generated from SYNQT API 2.84 today, and the spec lives with the generator app. A new SYNQT API version replaces the generated files in one commit, and every SYNQT SDK moves to the same version together, so they all ask payers for the same things in the same words.
 
 The Android README describes the South African mandatory fields, the "at least one of" tiles and the ID or passport question.
 
+## Building
+
+The source is `src/synqt.js`. `npm install`, then `npm run build`, bundles it with esbuild into `dist/`: `synqt.js`, the minified `synqt.min.js` with its source map, and a copy of `fonts/`. `dist/` is not committed; `npm pack` and `npm publish` build it first.
+
 ## Tests
 
-`npm test` (Node 20 or later, no install needed) runs `test/`: the forms and their SA rules, payment method checks, parsing, the API calls against a fake `fetch`, the sheet's behaviour without a browser, error wording and the loader's keyframes. They are ports of the Flutter SDK's tests.
+`npm test` (Node 20 or later, after `npm install`) builds `dist/` and runs `test/`: the built bundle, the forms and their SA rules, payment method checks, parsing, the API calls against a fake `fetch`, the sheet's behaviour without a browser, error wording and the loader's keyframes. They are ports of the Flutter SDK's tests.
 
 ## Running the demo
 

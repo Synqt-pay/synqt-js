@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const { readFileSync } = require('node:fs');
 const path = require('node:path');
-const SDK = require('../synqt.js');
+const SDK = require('../src/synqt.js');
 
 const { buildPaymentMethod, defaultChoices, filledIn, problem, problems, providers, readyToPay, regex, shows, validatePaymentMethod, methodForms, paymentMethodRules, parseOperators, parsePaymentOptions, hasText, text } = { ...SDK, ...SDK.internals };
 
@@ -23,7 +23,7 @@ test('every string the forms and the sheet use has English text', () => {
     ...methodForm.fields.flatMap((formField) => [formField.label, formField.hint, formField.placeholder, formField.section, formField.invalid, ...(formField.options ?? []).map((option) => option.label)].filter(Boolean)),
   ]);
   // Keys passed to text('…') in the sources, so a typo shows up here rather than as a raw key in front of a payer.
-  const sdk = readFileSync(path.join(__dirname, '../synqt.js'), 'utf8');
+  const sdk = readFileSync(path.join(__dirname, '../src/synqt.js'), 'utf8');
   keys.push(...[...sdk.matchAll(/['"](synqt_[a-z0-9_]+)['"]/g)].map((match) => match[1]));
   assert.deepEqual(keys.filter((key) => !hasText(key)), []);
 });

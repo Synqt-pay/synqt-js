@@ -1,7 +1,8 @@
 /*
- * SYNQT Web SDK: take SYNQT payins in a web page. One plain script with no dependencies and no build step:
+ * SYNQT Web SDK: take SYNQT payins in a web page. One plain script with no dependencies. `npm run build` bundles it
+ * into dist/ (synqt.js, synqt.min.js and its source map, and the fonts):
  *
- *   <script src="synqt.js"></script>
+ *   <script src="synqt.min.js"></script>
  *   const { Synqt, Money } = SynqtSDK;
  *
  * It sets the global SynqtSDK. See README.md. The block between BEGIN GENERATED and END GENERATED is generated from

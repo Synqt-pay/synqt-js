@@ -11,3 +11,7 @@ node_modules/
 *.p12
 .env
 .env.*
+
+# Build output (npm run build)
+dist/
+synqt-js-*.zip

@@ -1,7 +1,7 @@
 // The same inputs, checked the same way, in every SYNQT SDK. Generated: add cases to the shared table, not here.
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
-const { methodForms, problem } = require('../synqt.js').internals;
+const { methodForms, problem } = require('../src/synqt.js').internals;
 
 const cases = [
   ["CAPITEC_PAY", "said", "0000000000000", undefined],
