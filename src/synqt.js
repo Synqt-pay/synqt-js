@@ -684,7 +684,7 @@ const sheetStringsEn = {
   synqt_sheet_no_preference: "No preference",
   synqt_sheet_hint_bank_code: "The code from your bank or provider",
   synqt_sheet_hint_provider_code: "The code from your provider",
-  // Shown in place of a mandatory bank or provider field when SYNQT's list didn't load after two automatic retries. Draft, 23 Nov 2026, awaiting the Innovation Manager.
+  // Shown in place of a mandatory bank or provider field when SYNQT's list didn't load after two automatic retries. Approved by the Innovation Manager, 24 Nov 2026.
   synqt_sheet_banks_failed: "The list of banks could not be loaded. Check the connection and try again.",
   // The button that loads the list of banks again.
   synqt_sheet_try_again: "Try again",
@@ -822,7 +822,7 @@ const colorTokens = {
     "--surface-panel: #F0F0F0;",
     "--text: #1A1C29;",
     "--text-muted: #4E5670;",
-    "/* Example text in an empty field, lighter than typed text so it can't pass for it: 4.73:1 on the light surface, 4.96:1 on the dark one. Proposed 23 Nov 2026, awaiting the Innovation Manager. */",
+    "/* Example text in an empty field, lighter than typed text so it can't pass for it: 4.73:1 on the light surface, 4.96:1 on the dark one. Approved by the Innovation Manager, 24 Nov 2026. */",
     "--placeholder: #6B7389;",
     "--on-accent: #1A1C29;",
     "--action: #B505BF;",
@@ -847,7 +847,7 @@ const colorTokens = {
     "--surface-panel: #212536;",
     "--text: #FFFFFF;",
     "--text-muted: #A7AFC5;",
-    "/* Example text in an empty field, lighter than typed text so it can't pass for it: 4.73:1 on the light surface, 4.96:1 on the dark one. Proposed 23 Nov 2026, awaiting the Innovation Manager. */",
+    "/* Example text in an empty field, lighter than typed text so it can't pass for it: 4.73:1 on the light surface, 4.96:1 on the dark one. Approved by the Innovation Manager, 24 Nov 2026. */",
     "--placeholder: #838B9F;",
     "--on-accent: #1A1C29;",
     "--action: #F318FF;",
