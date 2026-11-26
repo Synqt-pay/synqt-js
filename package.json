@@ -1,6 +1,6 @@
 {
   "name": "@synqt/js",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Take SYNQT payins in a web page: a Synqt-branded payment sheet, the direct API, and the hosted Payment Web App.",
   "license": "Apache-2.0",
   "main": "dist/synqt.js",

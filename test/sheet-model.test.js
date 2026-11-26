@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const SDK = require('../src/synqt.js');
 
-const { methodForms, parseCreatePayin, parseErrors, SynqtAPIError, payinErrors, PaymentSheetModel, timeLeft } = { ...SDK, ...SDK.internals };
+const { methodForms, parseErrors, SynqtAPIError, payinErrors, PaymentSheetModel, timeLeft } = { ...SDK, ...SDK.internals };
 
 const all = { emailAddress: 'test@example.com', 'customerName.firstName': 'Jane', 'customerName.lastName': 'Doe' };
 const tick = () => new Promise((resolve) => setTimeout(resolve));
@@ -57,7 +57,7 @@ test('a refused prefilled value comes back into view under its field', async () 
 });
 
 test('closing after SYNQT accepted the payment returns that result, once', async () => {
-  const accepted = parseCreatePayin('{"paymentMethodResponse":{"paymentMethodCode":"ZAPPER_QR","qrCode":"https://example.com/qr.png"}}');
+  const accepted = { paymentMethodResponse: { paymentMethodCode: 'ZAPPER_QR', qrCode: 'https://example.com/qr.png' } };
   const model = sheet('ZAPPER_QR', all, async () => accepted);
   const results = [];
   model.onFinish = (result) => results.push(result);

@@ -4,7 +4,7 @@ const { readFileSync } = require('node:fs');
 const path = require('node:path');
 const SDK = require('../src/synqt.js');
 
-const { buildPaymentMethod, defaultChoices, filledIn, problem, problems, providers, readyToPay, regex, shows, validatePaymentMethod, methodForms, paymentMethodRules, parseOperators, parsePaymentOptions, hasText, text } = { ...SDK, ...SDK.internals };
+const { buildPaymentMethod, defaultChoices, filledIn, problem, problems, providers, readyToPay, regex, shows, validatePaymentMethod, methodForms, paymentMethodRules, parseOperators, hasText, text } = { ...SDK, ...SDK.internals };
 
 const form = (code) => methodForms.find((methodForm) => methodForm.code === code);
 const field = (code, path) => form(code).fields.find((formField) => formField.path === path);
@@ -176,14 +176,4 @@ test('operators carry their providers, listed once across banks', () => {
   const p1 = { code: 'S', name: 'S' };
   const p2 = { code: 'C', name: 'C' };
   assert.deepEqual(providers([{ externalProviders: [p1, p2] }, { externalProviders: [p2, p1] }]), [p1, p2]);
-});
-
-test('payment options carry operators and payer-facing names', () => {
-  const [fpx, other] = parsePaymentOptions({
-    data: [{ paymentMethodCode: 'FPX', paymentOperators: [{ code: 'MBB', name: 'Maybank' }] }, { paymentMethodCode: 'BRAND_NEW', segmentCode: 'S1' }],
-  });
-  assert.equal(fpx.name, 'FPX online banking');
-  assert.deepEqual(fpx.operators, [{ code: 'MBB', name: 'Maybank', externalProviders: [] }]);
-  assert.equal(other.name, undefined); // the sheet cannot show it, so it has no payer-facing name
-  assert.equal(other.segmentCode, 'S1');
 });

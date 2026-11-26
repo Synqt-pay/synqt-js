@@ -3,7 +3,7 @@
  * into dist/ (synqt.js, synqt.min.js and its source map, and the fonts):
  *
  *   <script src="synqt.min.js"></script>
- *   const { Synqt, Money } = SynqtSDK;
+ *   const { Synqt, IncomingPaymentsApi, Money } = SynqtSDK;
  *
  * It sets the global SynqtSDK. See README.md. The block between BEGIN GENERATED and END GENERATED is generated from
  * SYNQT's OpenAPI spec; never edit it by hand.
@@ -153,7 +153,53 @@ const paymentMethodRules = {
   },
 };
 
-/** One entry per direct API payment method a payer can fill in, shown by `Payin.presentPaymentSheet`. */
+/** The Payin request (POST /payins/{idPayin}) around its `paymentMethod`, which paymentMethodRules checks. */
+const payinRules = {
+  required: ["paymentMethod", "paymentRequested", "paymentRequested.money", "paymentRequested.money.amount", "paymentRequested.money.currencyCode", "returnUrl"],
+  allowed: ["paymentRequested", "paymentRequested.money", "paymentRequested.money.amount", "paymentRequested.money.currencyCode", "paymentRequested.segmentCode", "paymentRequested.exchangedToCurrency", "callbackUrl", "returnUrl", "customerIp"],
+};
+
+/** Per method code, the response fields each NextStep field is read from, the first one set winning. */
+const nextStepFields = {
+  ABSA_PAY: { reference: ["reference"], expiresAt: ["expireAt"] },
+  CAPITEC_PAY: { reference: ["reference"], expiresAt: ["expireAt"] },
+  CARD: { reference: ["reference"], expiresAt: ["expireAt"] },
+  CODE_PAYMENT: { reference: ["reference"], expiresAt: ["expireAt"] },
+  CRYPTO_OFFLINE: { qrCodeImageURL: ["qrCode"], reference: ["reference"], expiresAt: ["expireAt"] },
+  DUITNOW: { qrCodeImageURL: ["qrCode"], amountToPay: ["moneyRequired"], reference: ["reference"], expiresAt: ["expireAt"] },
+  EWALLET: { reference: ["reference"], expiresAt: ["expireAt"] },
+  FNB_DIRECT_EFT: { reference: ["reference"], expiresAt: ["expireAt"] },
+  FPX: { reference: ["reference"], expiresAt: ["expireAt"] },
+  IMPS: { qrCodeImageURL: ["qrCode"], reference: ["reference"], expiresAt: ["expireAt"] },
+  MOBILE_MONEY: { reference: ["reference"], expiresAt: ["expireAt"] },
+  MOMOPAY: { qrCodeImageURL: ["qrCode"], qrCodeData: ["qrRawData"], reference: ["reference"], expiresAt: ["expireAt"] },
+  NEDBANK_DIRECT_EFT: { reference: ["reference"], expiresAt: ["expireAt"] },
+  NETBANKING: { appLink: ["deepLink"], reference: ["reference"], expiresAt: ["expireAt"] },
+  OFFLINE: { qrCodeImageURL: ["qrCode"], amountToPay: ["moneyRequired"], reference: ["reference"], expiresAt: ["expireAt"], payInto: ["account"] },
+  ONLINE: { amountToPay: ["moneyRequired"], reference: ["reference"], expiresAt: ["expireAt"] },
+  OTT_VOUCHER: { reference: ["reference"], expiresAt: ["expireAt"] },
+  P2A_V2: { qrCodeImageURL: ["qrCode"], reference: ["reference"], expiresAt: ["expireAt"] },
+  PAYSHAP: { reference: ["reference"], expiresAt: ["expireAt"] },
+  PAY_ME: { appLink: ["payMeDeepLink"], qrCodeImageURL: ["qrCode"], amountToPay: ["moneyRequired"], reference: ["reference"], expiresAt: ["expireAt"] },
+  PIXQR: { qrCodeImageURL: ["qrCode"], qrCodeData: ["qrRawData"], reference: ["reference"], expiresAt: ["expireAt"] },
+  PROMPTPAY: { qrCodeImageURL: ["qrCode"], amountToPay: ["moneyRequired"], reference: ["reference"], expiresAt: ["expireAt"] },
+  PSE: { reference: ["reference"], expiresAt: ["expireAt"] },
+  QRISPAY: { qrCodeImageURL: ["qrCode"], qrCodeData: ["qrRawData"], reference: ["reference"], expiresAt: ["expireAt"] },
+  QRPH: { qrCodeImageURL: ["qrCode"], amountToPay: ["moneyRequired"], reference: ["reference"], expiresAt: ["expireAt"] },
+  SNAPSCAN_QR: { appLink: ["snapscanQrDeepLink"], qrCodeImageURL: ["qrCode"], qrCodeData: ["qrRawData"], reference: ["reference"], expiresAt: ["expireAt"] },
+  UPICOLLECT: { reference: ["reference"], expiresAt: ["expireAt"] },
+  UPIID: { reference: ["reference"], expiresAt: ["expireAt"] },
+  UPIQR: { appLink: ["upiQrDeepLink"], qrCodeImageURL: ["qrCode"], reference: ["reference"], expiresAt: ["expireAt"] },
+  VAPAY: { reference: ["reference"], expiresAt: ["expireAt"] },
+  VAPAY_VERIF: { reference: ["reference"], expiresAt: ["expireAt"] },
+  VIETQR: { qrCodeImageURL: ["qrCode"], reference: ["reference"], expiresAt: ["expireAt"] },
+  ZAPPER_QR: { appLink: ["zapperQrDeepLink"], qrCodeImageURL: ["qrCode"], qrCodeData: ["qrRawData"], reference: ["reference"], expiresAt: ["expireAt"] },
+};
+
+/** For a method code this SDK version does not know: the field names every method uses. */
+const nextStepFallback = { appLink: ["deepLink", "zapperQrDeepLink", "snapscanQrDeepLink", "upiQrDeepLink", "payMeDeepLink"], qrCodeImageURL: ["qrCode"], qrCodeData: ["qrRawData"], amountToPay: ["moneyRequired"], reference: ["reference"], expiresAt: ["expireAt"] };
+
+/** One entry per direct API payment method a payer can fill in, shown by `PayinCheckout.presentPaymentSheet`. */
 const methodForms = [
   {
     code: "ABSA_PAY",
@@ -937,9 +983,6 @@ const colorTokens = {
 
     const plain = (amount) => (amount.includes('.') ? amount.replace(/\.?0+$/, '') : amount);
 
-    /** The string key naming `code` for payers, or undefined if the sheet does not support it. */
-    const methodName = (code) => methodForms.find((methodForm) => methodForm.code === code)?.name;
-
     /**
      * SYNQT refused a request. `errors` holds its reasons (for 406, the business errors such as INVALID_PHONE_NUMBER),
      * each `{ code, field, description }`, where `field` names the input it is about (SYNQT's attrCode). The raw response
@@ -1018,78 +1061,73 @@ const colorTokens = {
     }
 
     /**
-     * What happened when a payin was created. Not proof of payment: check `payin.status()` (and your backend) for that.
-     * - `{ type: 'redirect', httpMethod, url, formData }`: send the payer to `url`. GET: open it. POST: submit a form to it
-     *   with one field per `formData` entry.
-     * - `{ type: 'instructions', paymentMethod, nextStep }`: the payer finishes elsewhere. `paymentMethod` is SYNQT's
-     *   `paymentMethodResponse` as sent; `nextStep` gathers what to show. The payment sheet already shows it.
+     * Where to send the payer, from the `redirectTo` of SYNQT's PayinAcceptedResponse: SYNQT's Redirection
+     * (`{ method, url, data }`) plus `formData`, the fields SYNQT sends as a JSON string in `data`. Undefined when SYNQT
+     * sent payment instructions instead (see `nextStep`). GET: open `url`. POST: submit a form to it with one field per
+     * `formData` entry.
      */
-    function parseCreatePayin(body) {
-        const response = obj(JSON.parse(body)) ?? {};
-        const redirect = obj(response.redirectTo);
-        const url = jsonText(redirect?.url);
-        if (redirect && url) {
-            const form = obj(decode(jsonText(redirect.data) ?? '')) ?? {};
-            return {
-                type: 'redirect',
-                httpMethod: jsonText(redirect.method) ?? 'GET',
-                url,
-                formData: Object.fromEntries(Object.entries(form).map(([key, value]) => [key, jsonText(value) ?? ''])),
-            };
-        }
-        const methodResponse = obj(response.paymentMethodResponse) ?? {};
-        return {type: 'instructions', paymentMethod: methodResponse, nextStep: parseNextStep(methodResponse)};
-    }
-
-// Every deep link field in the spec; a method returns at most one.
-    const APP_LINK_FIELDS = ['deepLink', 'zapperQrDeepLink', 'snapscanQrDeepLink', 'upiQrDeepLink', 'payMeDeepLink'];
-
-    /**
-     * What the payer does next, from whichever of these fields the method returned. On this device, open `appLink`; from
-     * another phone, scan the image at `qrCodeImageURL` (a temporary link) or a QR code you draw from `qrCodeData`.
-     * `amountToPay`, if set, is what the payer must pay exactly instead of the requested amount. `expiresAt` is ISO 8601.
-     * `payInto` is, for OFFLINE, the account the payer transfers to from their own banking app, quoting `reference`.
-     */
-    function parseNextStep(response) {
+    function redirect(response) {
+        const redirectTo = obj(response?.redirectTo);
+        const url = jsonText(redirectTo?.url);
+        if (!url) return undefined;
+        const form = obj(decode(jsonText(redirectTo.data) ?? '')) ?? {};
         return {
-            appLink: APP_LINK_FIELDS.map((fieldName) => jsonText(response[fieldName])).find(Boolean),
-            qrCodeImageURL: jsonText(response.qrCode),
-            qrCodeData: jsonText(response.qrRawData),
-            amountToPay: parseMoney(response.moneyRequired),
-            reference: jsonText(response.reference),
-            expiresAt: jsonText(response.expireAt),
-            // shortcut: OFFLINE only, as some methods' `account` is the payer's own; add others (such as VAPAY) once checked.
-            payInto: jsonText(response.paymentMethodCode) === 'OFFLINE' ? obj(response.account) : undefined,
+            ...redirectTo,
+            method: jsonText(redirectTo.method) ?? 'GET',
+            url,
+            formData: Object.fromEntries(Object.entries(form).map(([key, value]) => [key, jsonText(value) ?? ''])),
         };
     }
 
-    const STATUSES = ['PROCESSING', 'SUCCESS', 'FAILED', 'REFUSED'];
+    /**
+     * What the payer does next, from the `paymentMethodResponse` of SYNQT's PayinAcceptedResponse (or a PayinDetail), or
+     * undefined when there is none, as for a redirect. On this device, open `appLink`; from another phone, scan the image
+     * at `qrCodeImageURL` (a temporary link) or a QR code you draw from `qrCodeData`. `amountToPay`, a `Money`, if set, is
+     * what the payer must pay exactly instead of the requested amount. `expiresAt` is ISO 8601. `payInto` is, for OFFLINE,
+     * the account the payer transfers to from their own banking app, quoting `reference`. The payment sheet already shows
+     * all of this.
+     */
+    function nextStep(response) {
+        const method = obj(response?.paymentMethodResponse);
+        if (!method) return undefined;
+        const code = jsonText(method.paymentMethodCode);
+        // A method this SDK version doesn't know is read from the field names every method uses.
+        const fields = Object.hasOwn(nextStepFields, code) ? nextStepFields[code] : nextStepFallback;
+        // Missing, null and empty values don't count, as SYNQT sometimes sends "reference": "".
+        const first = (read, names = []) => names.map((name) => read(method[name])).find((value) => value !== undefined);
+        return {
+            appLink: first(jsonText, fields.appLink),
+            qrCodeImageURL: first(jsonText, fields.qrCodeImageURL),
+            qrCodeData: first(jsonText, fields.qrCodeData),
+            amountToPay: first(parseMoney, fields.amountToPay),
+            reference: first(jsonText, fields.reference),
+            expiresAt: first(jsonText, fields.expiresAt),
+            payInto: first(obj, fields.payInto),
+        };
+    }
+
+    /** SYNQT's payment statuses. New ones may come; treat an unknown status like PROCESSING. */
+    const PaymentStatus = Object.freeze({
+        PROCESSING: 'PROCESSING',
+        SUCCESS: 'SUCCESS',
+        FAILED: 'FAILED',
+        REFUSED: 'REFUSED',
+    });
 
     /**
-     * A payin's state from GET /payins/{id}. `status` is PROCESSING, SUCCESS, FAILED, REFUSED, or UNKNOWN for one this SDK
-     * version does not know (treat it like PROCESSING). `isFinal` is true for SUCCESS, FAILED and REFUSED.
+     * Whether a PayinDetail's `process.status` is SUCCESS, FAILED or REFUSED, which do not change again. For display only:
+     * fulfil orders from your backend's own check.
      */
-    function parsePayinStatus(response) {
-        const process = obj(response.process) ?? {};
-        const failure = obj(process.failureReasons);
-        const code = jsonText(failure?.failureReasonCode);
-        const status = STATUSES.includes(process.status) ? process.status : 'UNKNOWN';
-        return {
-            status,
-            isFinal: status !== 'PROCESSING' && status !== 'UNKNOWN',
-            requested: parseMoney(obj(response.paymentRequested)?.money),
-            fee: parseMoney(response.fee),
-            isTest: process.isTest === true || jsonText(process.isTest) === 'true',
-            failureReason: code && {
-                code,
-                message: jsonText(failure.message),
-                failedAt: jsonText(failure.failedAt),
-                payerMessage: text(payerMessageKey(code) ?? 'synqt_failure_general'),
-            },
-            paymentMethod: obj(response.paymentMethodResponse),
-            createdAt: jsonText(process.createdAt),
-            processedAt: jsonText(process.processedAt),
-        };
+    function isFinal(detail) {
+        return [PaymentStatus.SUCCESS, PaymentStatus.FAILED, PaymentStatus.REFUSED].includes(obj(detail?.process)?.status);
+    }
+
+    /**
+     * What to tell the payer about a PayinDetail's `process.failureReasons`, in the browser's language where the SDK has a
+     * translation. Its own `message` is SYNQT's, written for the merchant.
+     */
+    function payerMessage(failureReasons) {
+        return text(payerMessageKey(jsonText(obj(failureReasons)?.failureReasonCode)) ?? 'synqt_failure_general');
     }
 
     /** Payer-facing wording (a string key) for a SYNQT failure code, whose own description is meant for the merchant. */
@@ -1098,26 +1136,8 @@ const colorTokens = {
     }
 
     /**
-     * A method SYNQT offers this merchant: `code`, `operators` (its banks or providers), `segmentCode`, and `name`, the
-     * payer-facing name (undefined for methods the sheet does not support).
-     */
-    function parsePaymentOptions(response) {
-        return objects(response.data).flatMap((method) => {
-            const code = jsonText(method.paymentMethodCode);
-            if (!code) return [];
-            const key = methodName(code);
-            return [{
-                code,
-                name: key && text(key),
-                operators: parseOperators(method.paymentOperators),
-                segmentCode: jsonText(method.segmentCode)
-            }];
-        });
-    }
-
-    /**
-     * Banks and providers, `{ code, name, externalProviders: [{ code, name }] }`: send `code`, show `name`. Entries without
-     * a code are skipped, a missing name shows the code.
+     * The sheet's banks and providers from SYNQT's PaymentOperatorIncoming list, `{ code, name, externalProviders: [{ code,
+     * name }] }`: send `code`, show `name`. Entries without a code are skipped, a missing name shows the code.
      */
     function parseOperators(list) {
         return objects(list).flatMap((op) => {
@@ -1269,19 +1289,36 @@ const colorTokens = {
         const code = method?.paymentMethodCode;
         const rules = paymentMethodRules[code];
         if (!rules) throw new SynqtArgumentError(`Unknown paymentMethodCode ${code}`);
-        const walk = (object, prefix) => {
-            for (const [key, value] of Object.entries(object)) {
-                if (value == null || (!prefix && key === 'paymentMethodCode')) continue;
+        checkPaths(method, rules, code, 'paymentMethodCode');
+    }
+
+    /**
+     * Throws `SynqtArgumentError` when `payin` is not a Payin request SYNQT takes: its `paymentMethod` as
+     * `validatePaymentMethod` checks it, and around it `paymentRequested.money` (amount and currencyCode) and `returnUrl`,
+     * with optional `paymentRequested.segmentCode`, `paymentRequested.exchangedToCurrency`, `callbackUrl` and `customerIp`.
+     */
+    function validatePayin(payin) {
+        if (!obj(payin)) throw new SynqtArgumentError('payin must be an object');
+        if (payin.paymentMethod == null) throw new SynqtArgumentError('Payin needs paymentMethod', 'paymentMethod');
+        validatePaymentMethod(payin.paymentMethod);
+        checkPaths(payin, payinRules, 'Payin', 'paymentMethod');
+    }
+
+    /** Checks `object`'s paths against `rules` (`allowed` and `required`), leaving out the top-level `skip`. */
+    function checkPaths(object, rules, name, skip) {
+        const walk = (value, prefix) => {
+            for (const [key, child] of Object.entries(value)) {
+                if (child == null || (!prefix && key === skip)) continue;
                 const path = prefix + key;
-                if (!rules.allowed.includes(path)) throw new SynqtArgumentError(`${code} does not take ${path}`, path);
-                if (typeof value === 'object' && !Array.isArray(value)) walk(value, path + '.');
+                if (!rules.allowed.includes(path)) throw new SynqtArgumentError(`${name} does not take ${path}`, path);
+                if (typeof child === 'object' && !Array.isArray(child)) walk(child, path + '.');
             }
         };
-        walk(method, '');
+        walk(object, '');
         for (const path of rules.required) {
             const parent = path.includes('.') ? path.slice(0, path.lastIndexOf('.')) : '';
-            if ((parent === '' || get(method, parent) != null) && get(method, path) == null) {
-                throw new SynqtArgumentError(`${code} needs ${path}`, path);
+            if ((parent === '' || get(object, parent) != null) && get(object, path) == null) {
+                throw new SynqtArgumentError(`${name} needs ${path}`, path);
             }
         }
     }
@@ -1775,10 +1812,10 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
         async _send(method) {
             try {
                 const result = await this._submit(method);
-                const nextStep = result.type === 'instructions' ? result.nextStep : undefined;
-                if (nextStep && (nextStep.appLink || nextStep.qrCodeImageURL || nextStep.payInto)) {
+                const step = nextStep(result);
+                if (step && (step.appLink || step.qrCodeImageURL || step.payInto)) {
                     this.accepted = result;
-                    this.next = nextStep;
+                    this.next = step;
                 } else {
                     this.finish(result);
                 }
@@ -2401,15 +2438,144 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
 
 // ---- payin ----
 
+    const PAYIN_ID = /^[A-Za-z0-9_-]+$/;
+
+    /** Throws `SynqtArgumentError` unless `id` is a payin ID: letters, digits, `_` and `-`, at most 250. */
+    function requireID(id, name = 'idPayin') {
+        if (typeof id !== 'string' || id.length > 250 || !PAYIN_ID.test(id)) {
+            throw new SynqtArgumentError(`${name} must match ^[A-Za-z0-9_-]+$, max 250`);
+        }
+    }
+
+    /** Throws `SynqtArgumentError` unless `url` is an https URL: the Payment Web App rejects other schemes. */
+    function requireHTTPS(url, name) {
+        let https = false;
+        try {
+            https = new URL(url).protocol === 'https:';
+        } catch {
+            // not a URL at all
+        }
+        if (!https) throw new SynqtArgumentError(`${name} must be an https URL`, name);
+    }
+
     /**
-     * One order's payin, from `synqt.payin()`. Holds the token, ID, amount and URLs so each call needs only what is new.
-     * Calls throw `SynqtAPIError` when SYNQT refuses them, and fetch's `TypeError` (or a `TimeoutError` after 30 seconds)
-     * when it cannot be reached.
+     * SYNQT's incoming payments (payin) API, as in the Carpentum Java SDK's `IncomingPaymentsApi`: one instance per token,
+     * each call naming the payin it is about. Requests and responses are plain objects with the field names of SYNQT's
+     * spec (and the Java SDK's models):
+     *
+     * ```js
+     * const api = IncomingPaymentsApi.create(new Synqt('sandbox'), token);
+     * const accepted = await api.createPayin(payinID, {
+     *   paymentRequested: { money: new Money('100.00', 'ZAR') },
+     *   paymentMethod: { paymentMethodCode: 'CAPITEC_PAY', phoneNumber: '0821234567' },
+     *   returnUrl,
+     * });
+     * ```
+     *
+     * The token is minted by YOUR backend, which holds the merchant's private key (POST /auth-tokens-by-action with action
+     * PAYIN_CREATE and `money` set allows every call here for that payin). Calls throw `SynqtAPIError` when SYNQT refuses
+     * them, and fetch's `TypeError` (or a `TimeoutError` after 30 seconds) when it cannot be reached.
      */
-    class Payin {
+    class IncomingPaymentsApi {
+        /** An API for `accessToken`, on `synqt`'s environment. As the Java SDK's `IncomingPaymentsApi.create(context, token)`. */
+        static create(synqt, accessToken) {
+            return new IncomingPaymentsApi(synqt, accessToken);
+        }
+
+        constructor(synqt, accessToken) {
+            this._synqt = synqt;
+            this._token = accessToken;
+        }
+
+        /**
+         * SYNQT's AvailablePayinOptionList, `{ data: [{ paymentMethodCode, paymentOperators, segmentCode }] }`: the methods,
+         * banks and providers it offers this merchant for `paymentRequested` (`{ money, segmentCode? }`). Send the same
+         * `segmentCode` when paying.
+         */
+        async payinAvailablePaymentOptions(paymentRequested) {
+            if (!obj(obj(paymentRequested)?.money)) throw new SynqtArgumentError('paymentRequested needs money', 'money');
+            return obj(decode(await this._call('POST', '/payins/!availablePaymentOptions', paymentRequested))) ?? {};
+        }
+
+        /**
+         * Creates payin `idPayin` (your own ID for the order: letters, digits, `_` and `-`, at most 250, matching the
+         * token) from `payin`, a Payin request: `{ paymentRequested: { money, segmentCode?, exchangedToCurrency? },
+         * paymentMethod, returnUrl, callbackUrl?, customerIp? }`. `money` is a `Money` or `{ amount, currencyCode }` with a
+         * numeric amount. `customerIp` is checked against the merchant's IP allow and deny lists, so pass the payer's real
+         * IP if you have it.
+         *
+         * Resolves with SYNQT's PayinAcceptedResponse, either `{ paymentRequested, paymentMethodResponse }` or
+         * `{ paymentRequested, redirectTo }`; `nextStep` and `redirect` read the common parts. Not proof of payment: see
+         * `getPayin` and your backend's own check.
+         *
+         * A retry after a network failure is safe: if SYNQT already accepted `idPayin`, the existing payin is returned. If
+         * that payin was made with a different method, this throws `SynqtAPIError` (409, PAYIN_ALREADY_STARTED): start a
+         * new payin to pay another way.
+         *
+         * Throws `SynqtArgumentError` before sending for a malformed `idPayin`, a `returnUrl` that is not https, or a
+         * request `validatePayin` refuses.
+         */
+        async createPayin(idPayin, payin) {
+            requireID(idPayin);
+            validatePayin(payin);
+            requireHTTPS(payin.returnUrl, 'returnUrl');
+            let data;
+            try {
+                data = await this._call('POST', `/payins/${idPayin}`, payin);
+            } catch (error) {
+                if (!(error instanceof SynqtAPIError) || error.httpCode !== 409) throw error;
+                const existing = await this._call('GET', `/payins/${idPayin}`);
+                requireSameMethod(existing, payin.paymentMethod.paymentMethodCode);
+                // GET /payins/{id} carries paymentRequested and paymentMethodResponse, as the accepted response does.
+                const {paymentRequested, paymentMethodResponse} = obj(decode(existing)) ?? {};
+                return {paymentRequested, paymentMethodResponse};
+            }
+            return obj(decode(data)) ?? {};
+        }
+
+        /**
+         * Payin `idPayin` as SYNQT has it now, its PayinDetail: `{ paymentRequested, process: { status, failureReasons,
+         * isTest, ... }, fee, paymentMethodResponse, settlement, customer }`. `isFinal` and `payerMessage` read it. For
+         * display only: fulfil orders from your backend's own check, never from this. Before a payment is sent, SYNQT
+         * answers HTTP 410.
+         */
+        async getPayin(idPayin) {
+            requireID(idPayin);
+            return obj(decode(await this._call('GET', `/payins/${idPayin}`))) ?? {};
+        }
+
+        /**
+         * SYNQT's PaymentAccountDetail: the payer's account as they entered it and as the payment used it. The token must
+         * allow `GET /payins/{id}/accounts`.
+         */
+        async getPayinAccounts(idPayin) {
+            requireID(idPayin);
+            return obj(decode(await this._call('GET', `/payins/${idPayin}/accounts`))) ?? {};
+        }
+
+        /** The payer's bank or UTR reference, for methods that need it. The token must allow `POST /payins/{id}/!setExternalReference`. */
+        async setPayinExternalReference(idPayin, reference) {
+            requireID(idPayin);
+            if (typeof reference !== 'string' || reference.length < 1 || reference.length > 512) {
+                throw new SynqtArgumentError('reference must be 1 to 512 characters');
+            }
+            await this._call('POST', `/payins/${idPayin}/!setExternalReference`, {reference});
+        }
+
+        _call(method, path, body) {
+            return this._synqt.call(method, path, this._token, body);
+        }
+    }
+
+    /**
+     * One order's payin for the payment sheet or the Payment Web App, from `synqt.checkout()`. Holds the token, ID, amount
+     * and URLs so each call needs only what is new. For the API calls themselves, use `IncomingPaymentsApi`.
+     */
+    class PayinCheckout {
         constructor(synqt, {token, id, money, returnURL, callbackURL}) {
             this._synqt = synqt;
             this._token = token;
+            this._api = IncomingPaymentsApi.create(synqt, token);
             /** The order's payin ID. */
             this.id = id;
             /** The order's amount, a `Money`. */
@@ -2419,61 +2585,8 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
         }
 
         /**
-         * Creates the payin with a payment method you built yourself, a plain object such as
-         * `{ paymentMethodCode: 'CAPITEC_PAY', phoneNumber: '0821234567', customerName: { lastName: 'Doe' } }`. `customerIP`
-         * is checked against the merchant's IP allow and deny lists, so pass the payer's real IP if you have it. A retry
-         * after a network failure is safe: if SYNQT already accepted this payin ID, the existing payin is fetched instead.
-         * If that payin was made with a different method, this throws `SynqtAPIError` (409, PAYIN_ALREADY_STARTED): start a
-         * new payin to pay another way.
-         *
-         * Throws `SynqtArgumentError` before sending if the method code is unknown, or the object lacks a field the method
-         * needs or has one it does not take.
-         */
-        async create(paymentMethod, {customerIP} = {}) {
-            validatePaymentMethod(paymentMethod);
-            const body = {
-                paymentRequested: {money: this.money},
-                paymentMethod,
-                returnUrl: this.returnURL,
-                callbackUrl: this.callbackURL,
-                customerIp: customerIP,
-            };
-            let data;
-            try {
-                data = await this._call('POST', `/payins/${this.id}`, body);
-            } catch (error) {
-                if (!(error instanceof SynqtAPIError) || error.httpCode !== 409) throw error;
-                data = await this._call('GET', `/payins/${this.id}`);
-                requireSameMethod(data, paymentMethod.paymentMethodCode);
-            }
-            return parseCreatePayin(data);
-        }
-
-        /** Methods, banks and providers SYNQT offers this merchant for `money`. Send the same `segmentCode` when paying. */
-        async availablePaymentOptions({segmentCode} = {}) {
-            const data = await this._call('POST', '/payins/!availablePaymentOptions', {money: this.money, segmentCode});
-            return parsePaymentOptions(JSON.parse(data) ?? {});
-        }
-
-        /**
-         * For display only. Fulfil orders from your backend's own status check, never from this. Before a payment is sent,
-         * SYNQT answers HTTP 410.
-         */
-        async status() {
-            return parsePayinStatus(JSON.parse(await this._call('GET', `/payins/${this.id}`)) ?? {});
-        }
-
-        /** The payer's bank or UTR reference, for methods that need it. The token must allow `POST /payins/{id}/!setExternalReference`. */
-        async setExternalReference(reference) {
-            if (typeof reference !== 'string' || reference.length < 1 || reference.length > 512) {
-                throw new SynqtArgumentError('reference must be 1 to 512 characters');
-            }
-            await this._call('POST', `/payins/${this.id}/!setExternalReference`, {reference});
-        }
-
-        /**
          * Link to SYNQT's hosted Payment Web App for this payin. `paymentMethodCode` opens it on that method (one
-         * `availablePaymentOptions` returns) while still letting the payer pick another. `prefill` takes the Payment Web
+         * `payinAvailablePaymentOptions` returns) while still letting the payer pick another. `prefill` takes the Payment Web
          * App's own parameter names, such as `phoneNumber` or `emailAddress`, and the payer can still change them. `extra`
          * adds any other parameter as given, after these.
          * @param {{merchantCode: string, paymentMethodCode?: string, prefill?: Record<string, string>, extra?: Record<string, string>}} p
@@ -2485,7 +2598,7 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
                 ['token', this._token],
                 ['amount', this.money.plainAmount],
                 ['currencyCode', this.money.currencyCode],
-                ['callbackUrl', this.callbackURL],
+                ...(this.callbackURL ? [['callbackUrl', this.callbackURL]] : []),
                 ['returnUrl', this.returnURL],
                 ...(paymentMethodCode ? [['paymentMethodCode', paymentMethodCode], ['optionsAvailable', 'true']] : []),
                 ...Object.entries(prefill),
@@ -2497,11 +2610,12 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
 
         /**
          * Collects the payer's details for `paymentMethodCode` (one of `Synqt.directPaymentMethods`) in a Synqt-branded
-         * dialog, then creates the payin as `create` does. Errors, including SYNQT's field errors, stay in the dialog so the
-         * payer can correct them. Resolves with the `create` result once the dialog has closed, or null if the payer closed
-         * it without paying.
+         * dialog, then creates the payin with `IncomingPaymentsApi.createPayin`. Errors, including SYNQT's field errors, stay
+         * in the dialog so the payer can correct them. Resolves with SYNQT's PayinAcceptedResponse once the dialog has
+         * closed, or null if the payer closed it without paying. When `redirect(response)` gives a Redirection, the payer
+         * finishes on a bank's page; otherwise the dialog already showed the next step.
          *
-         * The bank or provider field lists the banks `availablePaymentOptions` returns for this payin and method; an
+         * The bank or provider field lists the banks `payinAvailablePaymentOptions` returns for this payin and method; an
          * optional one is hidden when SYNQT lists none. The summary names the merchant when the token also allows
          * `GET /merchant-info`. `prefill` is keyed by field path, such as `emailAddress` or `customerName.lastName`. CARD is
          * not offered: card details need PCI DSS compliant hosted fields.
@@ -2529,7 +2643,13 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
                 prefill,
                 operators,
                 summary: {amount: String(this.money), merchant, method: text(form.name), reference: this.id},
-                submit: (method) => this.create(method, {customerIP}),
+                submit: (paymentMethod) => this._api.createPayin(this.id, {
+                    paymentRequested: {money: this.money},
+                    paymentMethod,
+                    returnUrl: this.returnURL,
+                    callbackUrl: this.callbackURL,
+                    customerIp: customerIP,
+                }),
             });
             if (onPaymentStarted) model.onPaymentStarted = onPaymentStarted;
             model.reloadOperators = (stop) => this._sheetOperators(form, stop);
@@ -2539,9 +2659,9 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
         /**
          * Opens SYNQT's hosted Payment Web App in a popup window, and resolves once the payer reaches `returnURL` or closes
          * it: `{ type: 'returned', url }` with whatever the Payment Web App added to the URL, or `{ type: 'closed' }`. Either
-         * way, ask `status()` where the payment stands. Call it straight from a click handler, or the browser blocks the
-         * popup and this throws `SynqtArgumentError`. The return is seen only when `returnURL` is on this page's origin;
-         * otherwise the popup stays open on it until the payer closes it.
+         * way, ask `IncomingPaymentsApi.getPayin` where the payment stands. Call it straight from a click handler, or the
+         * browser blocks the popup and this throws `SynqtArgumentError`. The return is seen only when `returnURL` is on this
+         * page's origin; otherwise the popup stays open on it until the payer closes it.
          */
         presentPaymentApp({merchantCode, paymentMethodCode, prefill, extra, onPresented, signal}) {
             const url = this.paymentAppURL({merchantCode, paymentMethodCode, prefill, extra});
@@ -2556,10 +2676,6 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
             window.location.assign(this.paymentAppURL({merchantCode, paymentMethodCode, prefill, extra}));
         }
 
-        _call(method, path, body) {
-            return this._synqt.call(method, path, this._token, body);
-        }
-
         /**
          * Banks and providers for `form`'s bank or provider field (undefined if they could not be loaded), and the
          * merchant's name for the summary, which is a nicety: without it the summary leaves that row out.
@@ -2568,7 +2684,7 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
             const needsOperators = form.fields.some((field) => field.kind === 'paymentOperator' || field.kind === 'provider');
             const [operators, merchant] = await Promise.all([
                 needsOperators ? this._sheetOperators(form, signal) : [],
-                this._call('GET', '/merchant-info').then((body) => JSON.parse(body)?.channelInfo?.name || undefined, () => undefined),
+                this._synqt.call('GET', '/merchant-info', this._token).then((body) => JSON.parse(body)?.channelInfo?.name || undefined, () => undefined),
             ]);
             return {operators, merchant: typeof merchant === 'string' ? merchant : undefined};
         }
@@ -2586,7 +2702,8 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
                 });
                 if (signal?.aborted) return undefined;
                 try {
-                    return (await this.availablePaymentOptions()).find((option) => option.code === form.code)?.operators ?? [];
+                    const options = await this._api.payinAvailablePaymentOptions({money: this.money});
+                    return parseOperators(objects(options.data).find((option) => option.paymentMethodCode === form.code)?.paymentOperators);
                 } catch (error) {
                     if (error instanceof SynqtAPIError && error.httpCode < 500) return undefined;
                 }
@@ -2608,15 +2725,16 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
         live: {apiBaseURL: 'https://api.synqt.io', paymentAppBaseURL: 'https://payment.synqt.io/'},
     });
 
-    const PAYIN_ID = /^[A-Za-z0-9_-]+$/;
-
     /**
-     * Entry point of the SYNQT payins SDK. Create one per environment, then one `Payin` per order:
+     * Entry point of the SYNQT payins SDK. Create one per environment. For the ready-made payment sheet or Payment Web App,
+     * make one `PayinCheckout` per order:
      *
      * ```js
-     * const payin = new Synqt('sandbox').payin({ token, payinID, money: new Money('100.00', 'ZAR'), returnURL, callbackURL });
-     * const result = await payin.presentPaymentSheet({ paymentMethodCode: 'CAPITEC_PAY' });
+     * const checkout = new Synqt('sandbox').checkout({ token, payinID, money: new Money('100.00', 'ZAR'), returnURL, callbackURL });
+     * const accepted = await checkout.presentPaymentSheet({ paymentMethodCode: 'CAPITEC_PAY' });
      * ```
+     *
+     * To call the API yourself, as with the Carpentum Java SDK, use `IncomingPaymentsApi.create`.
      *
      * The token is minted per order by YOUR backend (POST /auth-tokens-by-action, action PAYIN_CREATE, with `money` set).
      * The merchant private key and Secret key must never reach the browser. A payment is only paid when your backend's own
@@ -2643,39 +2761,36 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
         }
 
         /**
-         * One order's payin. `payinID` is your own ID for it (letters, digits, `_` and `-`, at most 250) and must match the
-         * token. `returnURL` must be https: the Payment Web App rejects other schemes. Makes no network call. Throws
-         * `SynqtArgumentError` for a malformed ID or a returnURL that is not https.
-         * @param {{token: string, payinID: string, money: import('./results.js').Money, returnURL: string, callbackURL: string}} p
+         * One order's payin for the payment sheet or the Payment Web App. `payinID` is your own ID for it (letters, digits,
+         * `_` and `-`, at most 250) and must match the token. `money` is a `Money` or `{ amount, currencyCode }`, the same
+         * amount and currency as the token. `returnURL` must be https: the Payment Web App rejects other schemes.
+         * `callbackURL`, optional, is where SYNQT sends your backend the final status. Makes no network call. Throws
+         * `SynqtArgumentError` for a malformed ID or amount, or a returnURL that is not https.
+         * @param {{token: string, payinID: string, money: Money|{amount: string|number, currencyCode: string}, returnURL: string, callbackURL?: string}} p
          */
-        payin({token, payinID, money, returnURL, callbackURL}) {
-            if (typeof payinID !== 'string' || payinID.length > 250 || !PAYIN_ID.test(payinID)) {
-                throw new SynqtArgumentError('payinID must match ^[A-Za-z0-9_-]+$, max 250');
-            }
-            let https = false;
-            try {
-                https = new URL(returnURL).protocol === 'https:';
-            } catch {
-                // not a URL at all
-            }
-            if (!https) throw new SynqtArgumentError('returnURL must be an https URL');
-            return new Payin(this, {token, id: payinID, money, returnURL, callbackURL});
+        checkout({token, payinID, money, returnURL, callbackURL}) {
+            requireID(payinID, 'payinID');
+            requireHTTPS(returnURL, 'returnURL');
+            const amount = money instanceof Money ? money : new Money(money?.amount, money?.currencyCode);
+            return new PayinCheckout(this, {token, id: payinID, money: amount, returnURL, callbackURL});
         }
 
         /**
          * Every bank and provider SYNQT knows, with the providers behind each. SYNQT may add codes at any time, so treat
-         * unknown ones as normal. For what this merchant can use on a payin, use `payin.availablePaymentOptions()` instead.
+         * unknown ones as normal. Resolves with SYNQT's PaymentOperatorIncoming list as sent, each `{ code, name,
+         * externalProviders: { providers: [{ code, name }] } }`. For what this merchant can use on a payin, use
+         * `IncomingPaymentsApi.payinAvailablePaymentOptions` instead.
          *
          * `token` must allow `GET /payment-operators`. PAYIN_CREATE tokens do not, so mint one on your backend with
          * `POST /auth-tokens` and that operation.
          */
         async paymentOperators({token}) {
-            return parseOperators(JSON.parse(await this.call('GET', '/payment-operators', token))?.data);
+            return objects(obj(decode(await this.call('GET', '/payment-operators', token)))?.data);
         }
 
         /**
-         * Methods `payin.presentPaymentSheet` can collect details for, each `{ code, name }`. Offer only those
-         * `payin.availablePaymentOptions()` also returns.
+         * Methods `PayinCheckout.presentPaymentSheet` can collect details for, each `{ code, name }`, `name` being the
+         * payer-facing name. Offer only those `IncomingPaymentsApi.payinAvailablePaymentOptions` also returns.
          */
         static get directPaymentMethods() {
             return methodForms.map((methodForm) => ({code: methodForm.code, name: text(methodForm.name)}));
@@ -2706,16 +2821,24 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
 
     const SynqtSDK = {
         Synqt,
-        Payin,
+        IncomingPaymentsApi,
+        PayinCheckout,
         Money,
+        PaymentStatus,
+        nextStep,
+        redirect,
+        isFinal,
+        payerMessage,
         SynqtAPIError,
         SynqtArgumentError,
         environments,
         validatePaymentMethod,
+        validatePayin,
         /** The SDK's inner workings, for its own tests. Not a stable API. */
         internals: {
             methodForms,
             paymentMethodRules,
+            payinRules,
             text,
             hasText,
             buildPaymentMethod,
@@ -2727,11 +2850,8 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
             readyToPay,
             regex,
             shows,
-            parseCreatePayin,
             parseErrors,
             parseOperators,
-            parsePaymentOptions,
-            parsePayinStatus,
             formatMoney,
             PaymentSheetModel,
             payinErrors,
