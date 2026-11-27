@@ -870,12 +870,9 @@ const colorTokens = {
 };
 // END GENERATED
 
-// ---- strings ----
-
     /**
      * Payer-facing text by language. To add one, copy both English files to `<language>` versions, translate them and
-     * list them here, such as `af: { ...formStringsAf, ...sheetStringsAf }`. Keys are the Android SDK's string resource
-     * names, so one translation serves every platform.
+     * list them here, such as `af: { ...formStringsAf, ...sheetStringsAf }`.
      */
     const translations = {
         en: {...formStringsEn, ...sheetStringsEn},
@@ -895,8 +892,6 @@ const colorTokens = {
 
     /** Whether `key` has English text, so tests can catch a typo before a payer sees a raw key. */
     const hasText = (key) => key in translations.en;
-
-// ---- results ----
 
     const DECIMAL = /^-?\d+(\.\d+)?$/;
 
@@ -919,7 +914,7 @@ const colorTokens = {
             Object.freeze(this);
         }
 
-        /** The amount without trailing zeros, such as `12.3` for `12.30`, as the other SDKs write it into links. */
+        /** The amount without trailing zeros, such as `12.3` for `12.30`, as it goes into the Payment Web App link. */
         get plainAmount() {
             return plain(this.amount);
         }
@@ -974,7 +969,7 @@ const colorTokens = {
         }
     }
 
-// Loose JSON reading, as the other SDKs do: a missing, null or empty value reads as undefined rather than failing.
+// Loose JSON reading: a missing, null or empty value reads as undefined rather than failing.
 
     /** The value as text, or undefined when it is missing, null, empty or not a scalar. */
     function jsonText(value) {
@@ -1138,8 +1133,8 @@ const colorTokens = {
     }
 
     /**
-     * Rand as R1,250.00 (the synqt-output-format convention); other currencies as "USD 1,250.00". Keeps extra decimals
-     * the amount really has, so nothing is rounded away.
+     * Rand as R1,250.00; other currencies as "USD 1,250.00". Keeps extra decimals the amount really has, so nothing is
+     * rounded away.
      */
     function formatMoney(amount, currencyCode) {
         const negative = amount.startsWith('-');
@@ -1148,18 +1143,15 @@ const colorTokens = {
         return currencyCode === 'ZAR' ? `R${digits}` : `${currencyCode} ${digits}`;
     }
 
-// ---- method-form ----
-
-// The payment forms' rules, apart from any screen. A form (generated into method-forms.js) is
-// `{ code, name, fields, oneOfs }`. Each field is one payer-facing input for a text value of the payment method, keyed
-// by its JSON path (such as `customerName.lastName`), with string keys for its label, hint, section and message:
+// The payment forms' rules, apart from any screen. A form is `{ code, name, fields, oneOfs }`. Each field is one
+// payer-facing input for a text value of the payment method, keyed by its JSON path (such as `customerName.lastName`),
+// with string keys for its label, hint, section and message:
 // `{ path, label, kind, required, hint?, section?, minLength?, maxLength?, pattern?, invalid?, options? }`. `kind` is
 // text, email, phone, number, choice, paymentOperator (the banks availablePaymentOptions returns for the method) or
 // provider (the external providers of those banks). Each oneOf is a question, `{ question, choices }`, where the payer
 // gives one of several details: a choice is `{ label, paths, required }`; once chosen its `required` paths must be
 // filled in and its other paths are optional. The first choice is the default; other choices' fields are hidden and
 // not sent.
-
 
     const isBlank = (value) => (value ?? '').trim() === '';
 
@@ -1286,11 +1278,9 @@ const colorTokens = {
         }
     }
 
-// ---- icons ----
-
 // The sheet's line icons and the Synqt wordmark. Icon paths are Phosphor Icons, Regular weight (@phosphor-icons/core
 // 2.1.1, MIT licence, see THIRD_PARTY_NOTICES.md), on Phosphor's 256 by 256 grid; the wordmark paths and offsets are
-// the synqt-brand-design skill's synqt-logo-positive.svg. Copied from the other SDKs. Never redraw them.
+// the master artwork. Never redraw them.
 
     const iconPaths = {
         lock: 'M208,80H176V56a48,48,0,0,0-96,0V80H48A16,16,0,0,0,32,96V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V96A16,16,0,0,0,208,80ZM96,56a32,32,0,0,1,64,0V80H96ZM208,208H48V96H208V208Zm-68-56a12,12,0,1,1-12-12A12,12,0,0,1,140,152Z',
@@ -1314,16 +1304,12 @@ const colorTokens = {
     /** The wordmark's dot, always brand magenta. */
     const logoDot = [145.7092, 31.0714, 'M4.57 9.14 C7.10 9.14 9.14 7.10 9.14 4.57 C9.14 2.05 7.10 0.00 4.57 0.00 C2.05 0.00 0.00 2.05 0.00 4.57 C0.00 7.10 2.05 9.14 4.57 9.14 Z'];
 
-// ---- ui ----
-
-// The sheet's look: Synqt colour tokens, Instrument Sans, icons, the wordmark and the Orbit loader. Colours are the
-// synqt-brand-design skill's semantic tokens (design system artefact, 26 October 2026), the same values as the other
-// SDKs. Mobile type scale in Instrument Sans, spacing in 4, 8, 16 and 24, 12 radius cards and inputs, 48 high pill buttons, a
-// visible focus ring, light and dark. Text sizes are in rem, so they grow with the browser's text size.
-
+// The sheet's look: Synqt colour tokens, Instrument Sans, icons, the wordmark and the Orbit loader. Mobile type scale
+// in Instrument Sans, spacing in 4, 8, 16 and 24, 12 radius cards and inputs, 48 high pill buttons, a visible focus
+// ring, light and dark. Text sizes are in rem, so they grow with the browser's text size.
 
     const MAGENTA = '#F318FF';
-    /** Brand aqua, for the Orbit loader only. The brand keeps aqua for dark grounds; its use on light is an open point. */
+    /** Brand aqua, for the Orbit loader only. */
     const AQUA = '#27FFE2';
 
     /** An inline SVG icon; decorative, as the control it sits on carries the label. */
@@ -1461,9 +1447,9 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
     const ORBIT_DELAY = 7.2;
 
     /**
-     * The Synqt Orbit loader on `canvas`, drawn from the designer's Lottie file (synqt-loaders/lottie/orbit-*.json): a hub
-     * in the text colour, with a magenta and an aqua dot that each turn once, glide into the hub and back out. Decorative,
-     * so the canvas is hidden from screen readers; with reduced motion on it holds still. Returns a function that stops it.
+     * The Synqt Orbit loader on `canvas`, drawn from the designer's Lottie file: a hub in the text colour, with a magenta
+     * and an aqua dot that each turn once, glide into the hub and back out. Decorative, so the canvas is hidden from
+     * screen readers; with reduced motion on it holds still. Returns a function that stops it.
      */
     function orbitLoader(canvas) {
         canvas.setAttribute('aria-hidden', 'true');
@@ -1524,8 +1510,6 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
         }
         return bezier((lo + hi) / 2, 0, 1);
     }
-
-// ---- sheet-model ----
 
     /**
      * The payment sheet's state and behaviour, apart from the DOM: Pay checks the values, builds the payment method and
@@ -1690,7 +1674,7 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
             return this.inputs.length === 0 ? text('synqt_sheet_intro_nothing_to_enter') : undefined;
         }
 
-        /** The payer typed in a field. As the Android sheet's length filter, longer input is cut off. */
+        /** The payer typed in a field. Input longer than the field's `maxLength` is cut off. */
         setValue(field, value) {
             const chars = [...value];
             this.values[field.path] = field.maxLength != null && chars.length > field.maxLength ? chars.slice(0, field.maxLength).join('') : value;
@@ -1901,8 +1885,6 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
         const two = (number) => String(number).padStart(2, '0');
         return secs <= 0 ? '' : `${two(Math.floor(secs / 3600))}:${two(Math.floor((secs % 3600) / 60))}:${two(secs % 60)}`;
     }
-
-// ---- sheet ----
 
     /** Builds an element. `on*` attributes become listeners; false and undefined attributes are left out. */
     function el(tag, attrs = {}, ...children) {
@@ -2287,7 +2269,7 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
             }, ...rows.map(([label, value, copyValue]) => row(label, value, copyValue, true)));
         }
 
-        /** What the payer must know before transferring. Draft wording, based on the Payment Web App's notice. */
+        /** What the payer must know before transferring. */
         function notice() {
             const items = ['synqt_next_notice_exact', 'synqt_next_notice_once', 'synqt_next_notice_fees', 'synqt_next_notice_own_account'];
             return el('div', {class: 'notice'}, el('h3', {}, text('synqt_next_notice_title')),
@@ -2357,8 +2339,6 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
         });
     }
 
-// ---- payment-app ----
-
     /** True when `url` is the return URL, whatever query the Payment Web App added; a longer path is not. */
     function isReturn(url, returnURL) {
         const current = new URL(url);
@@ -2398,8 +2378,6 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
             onPresented?.();
         });
     }
-
-// ---- payin ----
 
     /**
      * One order's payin, from `synqt.payin()`. Holds the token, ID, amount and URLs so each call needs only what is new.
@@ -2595,15 +2573,13 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
         }
     }
 
-    /** As Java's URLEncoder leaves them, so the link matches the other SDKs': letters, digits and `-._*`. */
+    /** As Java's URLEncoder leaves them: letters, digits and `-._*`. */
     const enc = (value) => encodeURIComponent(value).replace(/[!'()~]/g, (character) => '%' + character.charCodeAt(0).toString(16).toUpperCase());
-
-// ---- synqt ----
 
     /** Where each SYNQT environment lives. The base URLs are public for backend calls such as minting tokens. */
     const environments = Object.freeze({
         sandbox: {apiBaseURL: 'https://api.sandbox.synqt.io', paymentAppBaseURL: 'https://payment.sandbox.synqt.io/'},
-        /** SYNQT internal development platform, as in the WordPress plugin. Not for merchants. */
+        /** SYNQT internal development platform. Not for merchants. */
         stable: {apiBaseURL: 'https://api.stable.aopay.io', paymentAppBaseURL: 'https://payment.stable.aopay.io/'},
         live: {apiBaseURL: 'https://api.synqt.io', paymentAppBaseURL: 'https://payment.synqt.io/'},
     });
@@ -2646,7 +2622,7 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
          * One order's payin. `payinID` is your own ID for it (letters, digits, `_` and `-`, at most 250) and must match the
          * token. `returnURL` must be https: the Payment Web App rejects other schemes. Makes no network call. Throws
          * `SynqtArgumentError` for a malformed ID or a returnURL that is not https.
-         * @param {{token: string, payinID: string, money: import('./results.js').Money, returnURL: string, callbackURL: string}} p
+         * @param {{token: string, payinID: string, money: Money, returnURL: string, callbackURL: string}} p
          */
         payin({token, payinID, money, returnURL, callbackURL}) {
             if (typeof payinID !== 'string' || payinID.length > 250 || !PAYIN_ID.test(payinID)) {
@@ -2701,8 +2677,6 @@ footer { border-top: 1px solid var(--border); padding: 8px 16px 16px; display: f
             return data;
         }
     }
-
-// ---- public API ----
 
     const SynqtSDK = {
         Synqt,
